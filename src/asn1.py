@@ -521,7 +521,7 @@ class Decoder(object):
         elif nr == Numbers.Null:
             value = self._decode_null(bytes_data)
         elif nr == Numbers.ObjectIdentifier:
-            value = self._decode_object_identifier(bytes_data)
+            value = self._decode_object_identifier(bytes_data, self.map_oids)
         elif nr in (Numbers.PrintableString, Numbers.IA5String, Numbers.UTCTime):
             value = self._decode_printable_string(bytes_data)
         else:
@@ -605,7 +605,7 @@ class Decoder(object):
         return None
 
     @staticmethod
-    def _decode_object_identifier(bytes_data):  # type: (bytes) -> str
+    def _decode_object_identifier(bytes_data, map_oids=False):  # type: (bytes) -> str
         """Decode an object identifier."""
         result = []
         value = 0
@@ -622,7 +622,7 @@ class Decoder(object):
         result = [result[0] // 40, result[0] % 40] + result[1:]
         result = list(map(str, result))
         oid_str = str('.'.join(result))
-        if self.map_oids:
+        if map_oids:
             return oid_map[oid_str]['id']
         else: 
             return oid_str
