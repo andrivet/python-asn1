@@ -1,3 +1,5 @@
+# From Peter Guttman at https://www.cs.auckland.ac.nz/~pgut001/dumpasn1.cfg
+
 oids = {'0.2.262.1.10': {'comment': 'Deutsche Telekom', 'id': 'Telesec'},
  '0.2.262.1.10.0': {'comment': 'Telesec', 'id': 'extension'},
  '0.2.262.1.10.1': {'comment': 'Telesec', 'id': 'mechanism'},
