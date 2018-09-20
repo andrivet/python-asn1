@@ -337,7 +337,9 @@ class Encoder(object):
 
 
 class Decoder(object):
-    """ASN.1 decoder. Understands BER (and DER which is a subset)."""
+    """ASN.1 decoder. Understands BER (and DER which is a subset).
+    Pass a value of true into the constructor to enable mapping of object ids into their actual names.
+    E.G. '1.2.840.113549.1.1.5' gets translated to 'sha1WithRSAEncryption'."""
 
     def __init__(self, map_oids=False):  # type: () -> None
         """Constructor."""
