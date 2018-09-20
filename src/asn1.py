@@ -23,6 +23,7 @@ from builtins import int
 from builtins import range
 from builtins import str
 from enum import IntEnum
+from oids import oids as oid_map
 
 __version__ = "2.2.0"
 
@@ -338,9 +339,10 @@ class Encoder(object):
 class Decoder(object):
     """ASN.1 decoder. Understands BER (and DER which is a subset)."""
 
-    def __init__(self):  # type: () -> None
+    def __init__(self, map_oids=False):  # type: () -> None
         """Constructor."""
         self.m_stack = None
+        self.map_oids = map_oids
         self.m_tag = None
 
     def start(self, data):  # type: (bytes) -> None
@@ -617,7 +619,11 @@ class Decoder(object):
             raise Error('ASN1 syntax error')
         result = [result[0] // 40, result[0] % 40] + result[1:]
         result = list(map(str, result))
-        return str('.'.join(result))
+        oid_str = str('.'.join(result))
+        if self.map_oids:
+            return oid_map[oid_str]['id']
+        else: 
+            return oid_str
 
     @staticmethod
     def _decode_printable_string(bytes_data):  # type: (bytes) -> unicode
