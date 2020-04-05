@@ -6,7 +6,7 @@ isort
 docutils
 check-manifest
 readme-renderer
-pygments
+pygments==2.6.1
 sphinx
 sphinx_rtd_theme
 coverage
