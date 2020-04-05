@@ -9,5 +9,5 @@ readme-renderer
 pygments
 sphinx
 sphinx_rtd_theme
-coverage
+coverage==5.0.4
 
