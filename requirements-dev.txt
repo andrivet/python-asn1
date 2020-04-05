@@ -2,7 +2,7 @@
 pytest
 tox
 flake8
-isort
+isort==4.3.21
 docutils
 check-manifest
 readme-renderer
