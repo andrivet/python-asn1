@@ -4,7 +4,7 @@ tox
 flake8
 isort
 docutils
-check-manifest
+check-manifest==0.41
 readme-renderer
 pygments
 sphinx
