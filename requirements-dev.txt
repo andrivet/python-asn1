@@ -7,7 +7,7 @@ docutils
 check-manifest
 readme-renderer
 pygments
-sphinx
+sphinx==3.0.0
 sphinx_rtd_theme
 coverage
 
