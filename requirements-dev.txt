@@ -8,6 +8,6 @@ check-manifest
 readme-renderer
 pygments
 sphinx
-sphinx_rtd_theme
+sphinx_rtd_theme==0.4.3
 coverage
 
