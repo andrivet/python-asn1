@@ -1,5 +1,5 @@
 -r requirements.txt
-pytest
+pytest==5.4.1
 tox
 flake8
 isort
