@@ -3,7 +3,7 @@ pytest
 tox
 flake8
 isort
-docutils
+docutils==0.16
 check-manifest
 readme-renderer
 pygments
