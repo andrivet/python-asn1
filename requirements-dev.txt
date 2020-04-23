@@ -5,7 +5,7 @@ flake8==3.7.9
 isort==4.3.21
 docutils==0.16
 check-manifest==0.41
-readme-renderer==25.0
+readme-renderer==26.0
 pygments==2.6.1
 sphinx==3.0.0
 sphinx_rtd_theme==0.4.3
