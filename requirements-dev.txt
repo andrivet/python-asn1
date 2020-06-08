@@ -1,7 +1,7 @@
 -r requirements.txt
 pytest==5.4.1
 tox==3.14.6
-flake8==3.7.9
+flake8==3.8.3
 isort==4.3.21
 docutils==0.16
 check-manifest==0.41
