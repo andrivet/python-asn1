@@ -24,7 +24,7 @@ def read(*names, **kwargs):
 
 
 install_requires = []
-if version_info[0] < 3.4:
+if version_info[0] == 3 and version_info[1] < 4:
     install_requires.append('enum34')
 if version_info[0] < 3:
     install_requires.append('future')

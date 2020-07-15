@@ -1,7 +1,14 @@
 Changelog
 =========
 
+2.4.1 (2020-07-15)
+------------------
+
+* Fix - Bad python version check on setup.py causes installation to fail on python versions higher than 3.4
+
+
 2.4.0 (2020-06-23)
+------------------
 
 * Fix #21 - Invalid decoding in non-Universal classes
 * Fix #57 - Invalid encoding of non-Universal classes

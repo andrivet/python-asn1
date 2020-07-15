@@ -6,4 +6,5 @@ The following people have contributed to Python-ASN1. Collectively they own the 
 
 * Geert Jansen <geert@boskant.nl>
 * Sebastien Andrivet <sebastien@andrivet.com>
+* Marc Benet <marcbenet@gmail.com>
 
