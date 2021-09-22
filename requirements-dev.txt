@@ -4,7 +4,7 @@ tox==3.17.1
 flake8==3.8.3
 isort==5.1.1
 docutils==0.16
-check-manifest==0.42
+check-manifest==0.47
 readme-renderer==26.0
 pygments==2.6.1
 sphinx==3.1.2
