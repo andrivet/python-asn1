@@ -3,7 +3,7 @@ pytest==6.2.5
 tox==3.17.1
 flake8==4.0.1
 isort==5.9.3
-docutils==0.17
+docutils==0.18
 check-manifest==0.47
 readme-renderer==30.0
 pygments==2.10.0
