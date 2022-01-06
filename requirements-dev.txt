@@ -6,7 +6,7 @@ isort==5.9.3
 docutils==0.17
 check-manifest==0.47
 readme-renderer==30.0
-pygments==2.10.0
+pygments==2.11.2
 sphinx==3.1.2
 sphinx_rtd_theme==1.0.0
 coverage==6.0.2
