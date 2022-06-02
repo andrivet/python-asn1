@@ -7,7 +7,7 @@ docutils==0.18.1
 check-manifest==0.47
 readme-renderer==32.0
 pygments==2.11.2
-sphinx==4.4.0
+sphinx==5.0.1
 sphinx_rtd_theme==1.0.0
 coverage==6.3.2
 twine==3.8.0
