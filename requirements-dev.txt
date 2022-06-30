@@ -1,6 +1,6 @@
 -r requirements.txt
 pytest==7.0.1
-tox==3.24.5
+tox==3.25.1
 flake8==4.0.1
 isort==5.10.1
 docutils==0.18.1
