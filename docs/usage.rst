@@ -35,7 +35,7 @@ Enumerated       int               no
 
 The column **default** is relevant for encoding only.  Because
 ASN.1 has more data types than Python, the situation arises that one Python
-type corresponds to multiple ASN.1 types. In this sitution the to be encoded
+type corresponds to multiple ASN.1 types. In this situation the encoded
 ASN.1 type cannot be determined from the Python type. The solution
 implemented in Python-ASN1 is that the most frequently used type will be the
 implicit default, and if another type is desired than that must be specified
