@@ -51,7 +51,9 @@ tag_id_to_string_map = {
     asn1.Numbers.GeneralizedTime: "GENERALIZED TIME",
     asn1.Numbers.Enumerated: "ENUMERATED",
     asn1.Numbers.Sequence: "SEQUENCE",
-    asn1.Numbers.Set: "SET"
+    asn1.Numbers.Set: "SET",
+    asn1.Numbers.UTF8String: "UTF8STRING"
+
 }
 
 class_id_to_string_map = {
@@ -150,6 +152,7 @@ def pretty_print(input_stream, output_stream, indent=0):
 parser = optparse.OptionParser()
 parser.add_option('-p', '--pem', dest='mode', action='store_const', const='pem', help='PEM encoded input')
 parser.add_option('-r', '--raw', dest='mode', action='store_const', const='raw', help='raw input')
+parser.add_option('-x', '--hex', dest='mode', action='store_const', const='hex', help='hex input')
 parser.add_option('-o', '--output', dest='output', help='output to FILE instead', metavar='FILE')
 parser.set_default('mode', 'pem')
 (opts, args) = parser.parse_args()
@@ -157,6 +160,9 @@ parser.set_default('mode', 'pem')
 if opts.mode == 'pem':
     input_file = open(args[0], 'r')
     input_data = read_pem(input_file)
+elif opts.mode == 'hex':
+    input_file = open(args[0], 'r')
+    input_data = bytes.fromhex(input_file.read())
 else:
     input_file = open(args[0], 'rb')
     input_data = input_file.read()
