@@ -24,8 +24,6 @@ def read(*names, **kwargs):
 
 
 install_requires = ['enum-compat']
-if version_info[0] < 3:
-    install_requires.append('future')
 
 setup(
     name='asn1',

@@ -43,16 +43,6 @@ Features
 - Can be integrated by just including a file into your project
 
 
-Dependencies
-==============
-
-Python-ASN1 relies on `Python-Future <https://python-future.org>`_ for Python 2 and 3 compatibility. To install Python-Future:
-
-.. code-block:: sh
-
-  pip install future
-
-
 How to install Python-asn1
 ==========================
 
