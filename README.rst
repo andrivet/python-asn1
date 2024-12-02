@@ -1,33 +1,14 @@
-.. start-badges
+cd C:\Users\asus\python-asn1-1\examples
 
-|build| |version| |wheel| |supported-versions| |supported-implementations|
+python dump.py --pem private_key.pem
 
-.. |build| image:: https://github.com/andrivet/python-asn1/actions/workflows/tests.yml/badge.svg
-    :target: https://github.com/andrivet/python-asn1
-    :alt: GitHub Actions
+python rsa_key_completion.py
 
-.. |docs| image:: https://readthedocs.org/projects/python-asn1/badge/?style=flat
-    :target: https://readthedocs.org/projects/python-asn1
-    :alt: Documentation Status
-
-.. |version| image:: https://img.shields.io/pypi/v/asn1.svg?style=flat
-    :alt: PyPI Package latest release
-    :target: https://pypi.org/project/asn1/
-
-.. |wheel| image:: https://img.shields.io/pypi/wheel/asn1.svg?style=flat
-    :alt: PyPI Wheel
-    :target: https://pypi.org/project/asn1/
-
-.. |supported-versions| image:: https://img.shields.io/pypi/pyversions/asn1.svg?style=flat
-    :alt: Supported versions
-    :target: https://pypi.org/project/asn1/
-
-.. |supported-implementations| image:: https://img.shields.io/pypi/implementation/asn1.svg?style=flat
-    :alt: Supported implementations
-    :target: https://pypi.org/project/asn1/
+python finalize_rsa_key.py
 
 
-.. end-badges
+teststststtststtsttsst
+
 
 ========
 Overview

@@ -22,6 +22,7 @@ def read_pem(input_file):
     data = []
     state = 0
     for line in input_file:
+        print("Reading line: ", line.strip())  # Debug print
         if state == 0:
             if line.startswith('-----BEGIN'):
                 state = 1
@@ -29,13 +30,14 @@ def read_pem(input_file):
             if line.startswith('-----END'):
                 state = 2
             else:
-                data.append(line)
+                data.append(line.strip())  # Ensure no newline chars
         elif state == 2:
             break
     if state != 2:
         raise ValueError('No PEM encoded input found')
     data = ''.join(data)
     return base64.b64decode(data)
+
 
 
 tag_id_to_string_map = {
