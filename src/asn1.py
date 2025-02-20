@@ -4,7 +4,7 @@
 # made available under the MIT license. Consult the file "LICENSE" that is
 # distributed together with this file for the exact licensing terms.
 #
-# Python-ASN1 is copyright (c) 2007-2016 by the Python-ASN1 authors. See the
+# Python-ASN1 is copyright (c) 2007-2025 by the Python-ASN1 authors. See the
 # file "AUTHORS" for a complete overview.
 
 """
@@ -24,7 +24,6 @@ from builtins import range
 from builtins import str
 from contextlib import contextmanager
 from enum import IntEnum
-from numbers import Number
 
 __version__ = "2.7.1"
 
@@ -60,31 +59,40 @@ class Classes(IntEnum):
 
 
 Tag = collections.namedtuple('Tag', 'nr typ cls')
-"""A named tuple to represent ASN.1 tags as returned by `Decoder.peek()` and
-`Decoder.read()`."""
+"""
+A named tuple to represent ASN.1 tags as returned by `Decoder.peek()` and
+`Decoder.read()`.
+"""
 
 
 class Error(Exception):
-    """ASN.11 encoding or decoding error."""
+    """
+    ASN.11 encoding or decoding error.
+    """
 
 
 class Encoder(object):
-    """ASN.1 encoder. Uses DER encoding.
+    """
+    ASN.1 encoder. Uses DER encoding.
     """
 
     def __init__(self):  # type: () -> None
-        """Constructor."""
+        """
+        Constructor.
+        """
         self.m_stack = None
 
     def start(self):  # type: () -> None
-        """This method instructs the encoder to start encoding a new ASN.1
+        """
+        This method instructs the encoder to start encoding a new ASN.1
         output. This method may be called at any time to reset the encoder,
         and resets the current output (if any).
         """
         self.m_stack = [[]]
 
     def enter(self, nr, cls=None):  # type: (int, int) -> None
-        """This method starts the construction of a constructed type.
+        """
+        This method starts the construction of a constructed type.
 
         Args:
             nr (int): The desired ASN.1 type. Use ``Numbers`` enumeration.
@@ -107,7 +115,8 @@ class Encoder(object):
         self.m_stack.append([])
 
     def leave(self):  # type: () -> None
-        """This method completes the construction of a constructed type and
+        """
+        This method completes the construction of a constructed type and
         writes the encoded representation to the output buffer.
         """
         if self.m_stack is None:
@@ -121,7 +130,8 @@ class Encoder(object):
 
     @contextmanager
     def construct(self, nr, cls=None):  # type: (int, int) -> None
-        """This method - context manager calls enter and leave methods,
+        """
+        This method - context manager calls enter and leave methods,
         for better code mapping.
 
         Usage:
@@ -160,7 +170,8 @@ class Encoder(object):
         self.leave()
 
     def write(self, value, nr=None, typ=None, cls=None):  # type: (object, int, int, int) -> None
-        """This method encodes one ASN.1 tag and writes it to the output buffer.
+        """
+        This method encodes one ASN.1 tag and writes it to the output buffer.
 
         Note:
             Normally, ``value`` will be the only parameter to this method.
@@ -224,7 +235,8 @@ class Encoder(object):
         self._emit(value)
 
     def output(self):  # type: () -> bytes
-        """This method returns the encoded ASN.1 data as plain Python ``bytes``.
+        """
+        This method returns the encoded ASN.1 data as plain Python ``bytes``.
         This method can be called multiple times, also during encoding.
         In the latter case the data that has been encoded so far is
         returned.
@@ -403,7 +415,9 @@ class Encoder(object):
 
 
 class Decoder(object):
-    """ASN.1 decoder. Understands BER (and DER which is a subset)."""
+    """
+    ASN.1 decoder. Understands BER (and DER which is a subset).
+    """
 
     def __init__(self):  # type: () -> None
         """Constructor."""
@@ -411,7 +425,8 @@ class Decoder(object):
         self.m_tag = None
 
     def start(self, data):  # type: (bytes) -> None
-        """This method instructs the decoder to start decoding the ASN.1 input
+        """
+        This method instructs the decoder to start decoding the ASN.1 input
         ``data``, which must be a passed in as plain Python bytes.
         This method may be called at any time to start a new decoding job.
         If this method is called while currently decoding another input, that
@@ -436,7 +451,8 @@ class Decoder(object):
         self.m_tag = None
 
     def peek(self):  # type: () -> Tag
-        """This method returns the current ASN.1 tag (i.e. the tag that a
+        """
+        This method returns the current ASN.1 tag (i.e. the tag that a
         subsequent `Decoder.read()` call would return) without updating the
         decoding offset. In case no more data is available from the input,
         this method returns ``None`` to signal end-of-file.
@@ -466,7 +482,8 @@ class Decoder(object):
         return self.m_tag
 
     def read(self, tagnr=None):  # type: (Number) -> (Tag, any)
-        """This method decodes one ASN.1 tag from the input and returns it as a
+        """
+        This method decodes one ASN.1 tag from the input and returns it as a
         ``(tag, value)`` tuple. ``tag`` is a 3-tuple ``(nr, typ, cls)``,
         while ``value`` is a Python object representing the ASN.1 value.
         The offset in the input is increased so that the next `Decoder.read()`
@@ -492,7 +509,8 @@ class Decoder(object):
         return tag, value
 
     def eof(self):  # type: () -> bool
-        """Return True if we are at the end of input.
+        """
+        Return True if we are at the end of input.
 
         Returns:
             bool: True if all input has been decoded, and False otherwise.
@@ -500,7 +518,8 @@ class Decoder(object):
         return self._end_of_input()
 
     def enter(self):  # type: () -> None
-        """This method enters the constructed type that is at the current
+        """
+        This method enters the constructed type that is at the current
         decoding offset.
 
         Note:
@@ -521,7 +540,8 @@ class Decoder(object):
         self.m_tag = None
 
     def leave(self):  # type: () -> None
-        """This method leaves the last constructed type that was
+        """
+        This method leaves the last constructed type that was
         `Decoder.enter()`-ed.
 
         Note:
@@ -539,7 +559,9 @@ class Decoder(object):
         self.m_tag = None
 
     def _read_tag(self):  # type: () -> Tag
-        """Read a tag from the input."""
+        """
+        Read a tag from the input.
+        """
         byte = self._read_byte()
         cls = byte & 0xc0
         typ = byte & 0x20
@@ -554,7 +576,9 @@ class Decoder(object):
         return Tag(nr=nr, typ=typ, cls=cls)
 
     def _read_length(self):  # type: () -> int
-        """Read a length from the input."""
+        """
+        Read a length from the input.
+        """
         byte = self._read_byte()
         if byte & 0x80:
             count = byte & 0x7f
@@ -573,7 +597,9 @@ class Decoder(object):
         return length
 
     def _read_value(self, cls, nr, length):  # type: (int, int, int) -> any
-        """Read a value from the input."""
+        """
+        Read a value from the input.
+        """
         bytes_data = self._read_bytes(length)
         if cls != Classes.Universal:
             value = bytes_data
@@ -598,7 +624,9 @@ class Decoder(object):
         return value
 
     def _read_byte(self):  # type: () -> int
-        """Return the next input byte, or raise an error on end-of-input."""
+        """
+        Return the next input byte, or raise an error on end-of-input.
+        """
         index, input_data = self.m_stack[-1]
         try:
             byte = input_data[index]
@@ -608,8 +636,10 @@ class Decoder(object):
         return byte
 
     def _read_bytes(self, count):  # type: (int) -> bytes
-        """Return the next ``count`` bytes of input. Raise error on
-        end-of-input."""
+        """
+        Return the next ``count`` bytes of input. Raise error on
+        end-of-input.
+        """
         index, input_data = self.m_stack[-1]
         bytes_data = input_data[index:index + count]
         if len(bytes_data) != count:
@@ -618,14 +648,18 @@ class Decoder(object):
         return bytes_data
 
     def _end_of_input(self):  # type: () -> bool
-        """Return True if we are at the end of input."""
+        """
+        Return True if we are at the end of input.
+        """
         index, input_data = self.m_stack[-1]
         assert not index > len(input_data)
         return index == len(input_data)
 
     @staticmethod
     def _decode_boolean(bytes_data):  # type: (bytes) -> bool
-        """Decode a boolean value."""
+        """
+        Decode a boolean value.
+        """
         if len(bytes_data) != 1:
             raise Error('ASN1 syntax error')
         if bytes_data[0] == 0:
@@ -634,7 +668,9 @@ class Decoder(object):
 
     @staticmethod
     def _decode_integer(bytes_data):  # type: (bytes) -> int
-        """Decode an integer value."""
+        """
+        Decode an integer value.
+        """
         values = [int(b) for b in bytes_data]
         # check if the integer is normalized
         if len(values) > 1 and (values[0] == 0xff and values[1] & 0x80 or values[0] == 0x00 and not (values[1] & 0x80)):
@@ -663,19 +699,25 @@ class Decoder(object):
 
     @staticmethod
     def _decode_octet_string(bytes_data):  # type: (bytes) -> bytes
-        """Decode an octet string."""
+        """
+        Decode an octet string.
+        """
         return bytes_data
 
     @staticmethod
     def _decode_null(bytes_data):  # type: (bytes) -> any
-        """Decode a Null value."""
+        """
+        Decode a Null value.
+        """
         if len(bytes_data) != 0:
             raise Error('ASN1 syntax error')
         return None
 
     @staticmethod
     def _decode_object_identifier(bytes_data):  # type: (bytes) -> str
-        """Decode an object identifier."""
+        """
+        Decode an object identifier.
+        """
         result = []
         value = 0
         for i in range(len(bytes_data)):
@@ -697,12 +739,16 @@ class Decoder(object):
 
     @staticmethod
     def _decode_printable_string(bytes_data):  # type: (bytes) -> str
-        """Decode a printable string."""
+        """
+        Decode a printable string.
+        """
         return bytes_data.decode('utf-8')
 
     @staticmethod
     def _decode_bitstring(bytes_data):  # type: (bytes) -> str
-        """Decode a bitstring."""
+        """
+        Decode a bitstring.
+        """
         if len(bytes_data) == 0:
             raise Error('ASN1 syntax error')
 
