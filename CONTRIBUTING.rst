@@ -61,6 +61,16 @@ To set up Python-ASN1 for local development:
 
 6. Submit a pull request through the GitHub website.
 
+To use the provided Docker file:
+
+1. Build the image::
+
+    docker build -t python-asn1 .
+
+2. Run the tests::
+
+    docker run --rm --name python-asn1 python-asn1
+
 Pull Request Guidelines
 -----------------------
 
