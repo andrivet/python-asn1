@@ -49,7 +49,7 @@ To set up Python-ASN1 for local development:
 
    Now you can make your changes locally.
 
-4. When you're done making changes, run all the checks, doc builder and spell checker with `tox <https://tox.wiki/en/latest/install.html>`_ one command::
+4. When you're done making changes, run all the checks, doc builder and spell checker with `tox <https://tox.wiki/en/latest/installation.html>`_ one command::
 
     tox
 
@@ -74,7 +74,7 @@ For merging, you should:
 4. Add yourself to ``AUTHORS.rst``.
 
 .. [1] If you don't have all the necessary python versions available locally you can rely on Travis - it will
-       `run the tests <https://travis-ci.org/andrivet/python-asn1/pull_requests>`_ for each change you add in the pull request.
+       `run the tests <https://app.travis-ci.com/andrivet/python-asn1/pull_requests>`_ for each change you add in the pull request.
 
        It will be slower though ...
 

@@ -6,7 +6,7 @@ Dump
 
 This command line utility reads a X509.v3 certificate (in DER or PEM encoding),
 decodes it and outputs a textual representation. It more or less mimics
-`openssl asn1parse <https://www.openssl.org/docs/man1.1.1/man1/openssl-asn1parse.html>`_:
+`openssl asn1parse <https://docs.openssl.org/1.1.1/man1/openssl-asn1parse/>`_:
 
 .. code-block:: shell
 
