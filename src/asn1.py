@@ -25,7 +25,7 @@ from builtins import str
 from contextlib import contextmanager
 from enum import IntEnum
 
-__version__ = "2.7.1"
+__version__ = "2.8.0"
 
 
 class HexEnum(IntEnum):

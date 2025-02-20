@@ -1,8 +1,16 @@
 Changelog
 =========
 
-2.7.1 (2024-08-07
------------------
+2.8.9 (2025-02-20)
+------------------
+
+* PR #285 - Use Enum with Tag for pretty representation (thanks to @Julien00859)
+* Make explicit that Python 3.12 and 3.13 are supported
+* Fix some links in the documentation
+* Add a Docker file for testing
+
+2.7.1 (2024-08-07)
+------------------
 
 * Fix OID encoding/decoding for the first octet according to ITU-T X.690 (thanks to Ian Neal)
 
