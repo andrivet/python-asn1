@@ -1,7 +1,7 @@
 Changelog
 =========
 
-2.8.9 (2025-02-20)
+2.8.0 (2025-02-20)
 ------------------
 
 * PR #285 - Use Enum with Tag for pretty representation (thanks to @Julien00859)
