@@ -392,6 +392,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Boolean, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.Boolean: 0x01>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert isinstance(val, int)
         assert val
@@ -412,6 +413,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Integer, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.Integer: 0x02>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert isinstance(val, int)
         assert val == 1
@@ -462,6 +464,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.OctetString, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.OctetString: 0x04>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val == b'foo'
 
@@ -471,6 +474,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.PrintableString, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.PrintableString: 0x13>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val == u'foo'
 
@@ -480,6 +484,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.BitString, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.BitString: 0x03>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val == b'\x12\x34\x56'
 
@@ -489,6 +494,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.BitString, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.BitString: 0x03>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val == b'\x01\x23\x45'
 
@@ -498,6 +504,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.PrintableString, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.PrintableString: 0x13>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val == u'fooé'
 
@@ -507,6 +514,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Null, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.Null: 0x05>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val is None
 
@@ -552,6 +560,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Enumerated, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.Enumerated: 0x0a>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert isinstance(val, int)
         assert val == 1
@@ -562,6 +571,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Sequence, asn1.Types.Constructed, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.Sequence: 0x10>, typ=<Types.Constructed: 0x20>, cls=<Classes.Universal: 0x00>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -574,6 +584,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Sequence, asn1.Types.Constructed, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.Sequence: 0x10>, typ=<Types.Constructed: 0x20>, cls=<Classes.Universal: 0x00>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -586,6 +597,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Set, asn1.Types.Constructed, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.Set: 0x11>, typ=<Types.Constructed: 0x20>, cls=<Classes.Universal: 0x00>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -598,6 +610,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Set, asn1.Types.Constructed, asn1.Classes.Universal)
+        assert str(tag) == "Tag(nr=<Numbers.Set: 0x11>, typ=<Types.Constructed: 0x20>, cls=<Classes.Universal: 0x00>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -610,6 +623,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (1, asn1.Types.Constructed, asn1.Classes.Context)
+        assert str(tag) == "Tag(nr=1, typ=<Types.Constructed: 0x20>, cls=<Classes.Context: 0x80>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -620,6 +634,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (1, asn1.Types.Constructed, asn1.Classes.Application)
+        assert str(tag) == "Tag(nr=1, typ=<Types.Constructed: 0x20>, cls=<Classes.Application: 0x40>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -630,6 +645,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (1, asn1.Types.Constructed, asn1.Classes.Private)
+        assert str(tag) == "Tag(nr=1, typ=<Types.Constructed: 0x20>, cls=<Classes.Private: 0xc0>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1

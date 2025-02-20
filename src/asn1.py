@@ -28,7 +28,16 @@ from enum import IntEnum
 __version__ = "2.7.1"
 
 
-class Numbers(IntEnum):
+class HexEnum(IntEnum):
+    def __repr__(self):
+        return '<{cls}.{name}: 0x{value:02x}>'.format(
+            cls=type(self).__name__,
+            name=self.name,
+            value=self.value
+        )
+
+
+class Numbers(HexEnum):
     Boolean = 0x01
     Integer = 0x02
     BitString = 0x03
@@ -46,12 +55,12 @@ class Numbers(IntEnum):
     UnicodeString = 0x1e
 
 
-class Types(IntEnum):
+class Types(HexEnum):
     Constructed = 0x20
     Primitive = 0x00
 
 
-class Classes(IntEnum):
+class Classes(HexEnum):
     Universal = 0x00
     Application = 0x40
     Context = 0x80
@@ -573,6 +582,19 @@ class Decoder(object):
                 nr = (nr << 7) | (byte & 0x7f)
                 if not byte & 0x80:
                     break
+        try:
+            typ = Types(typ)
+        except ValueError:
+            pass
+        try:
+            cls = Classes(cls)
+        except ValueError:
+            pass
+        if cls == Classes.Universal:
+            try:
+                nr = Numbers(nr)
+            except ValueError:
+                pass
         return Tag(nr=nr, typ=typ, cls=cls)
 
     def _read_length(self):  # type: () -> int
