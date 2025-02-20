@@ -7,6 +7,8 @@ graft tests
 include .coveragerc
 include .cookiecutterrc
 include .editorconfig
+exclude Dockerfile
+exclude .dockerignore
 
 include AUTHORS.rst
 include CHANGELOG.rst
