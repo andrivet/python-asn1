@@ -2,28 +2,34 @@ name: GitHub Tests
 
 on:
   push:
-    branches: [master]
   pull_request:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        python-version: ['2.7', '3.5', '3.6', '3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
-
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: LizardByte/setup-python-action@master
-      with:
-        python-version: ${{ matrix.python-version }}
-      env:
-        PIP_TRUSTED_HOST: "pypi.python.org pypi.org files.pythonhosted.org"
-    - name: Install dependencies
+    - name: Set up Python
       run: |
-        python -m pip install --upgrade pip wheel
-        pip install tox tox-gh-actions
+          sudo apt-get update
+          sudo apt install software-properties-common -y
+          sudo add-apt-repository ppa:deadsnakes/ppa
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git curl
+          sudo apt-get install -y --no-install-recommends \
+            python2.7 \
+            python3.4 \
+            python3.5 \
+            python3.6 python3.6-distutils \
+            python3.7 python3.7-distutils \
+            python3.8 python3.8-distutils \
+            python3.9 \
+            python3.10 \
+            python3.11 \
+            python3.12 \
+            python3.13
+          curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
+          pip3 install --upgrade pip setuptools wheel tox tox-gh-actions
     - name: Test with tox
       run: tox
