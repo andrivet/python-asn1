@@ -926,7 +926,10 @@ class Decoder(object):
             raise Error('ASN1 decoding error: the Universal tag number {} shall have a constructed encoding'.format(nr))
 
         if cls != Classes.Universal:
-            return self._decode_bytes(typ, 0, length)
+            if typ == Types.Primitive:
+                return self._decode_bytes(typ, nr, length)
+            else:
+                return self._decode_sequence(length)
 
         # Primitive encoding
         if nr == Numbers.Boolean:
@@ -953,11 +956,9 @@ class Decoder(object):
                 return value, unused
             return value
 
-        # Constructed types
-        if nr == Numbers.Sequence:
-            return self._decode_sequence(length)
-
-        return self._decode_bytes(typ, 0, length)
+        if typ == Types.Primitive:
+            return self._decode_bytes(typ, nr, length)
+        return self._decode_sequence(length)
 
     @staticmethod
     def _check_length(actual_length, expected_length):  # type: (int, int) -> None
