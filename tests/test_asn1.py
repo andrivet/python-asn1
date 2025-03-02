@@ -639,7 +639,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.BitString, asn1.Types.Primitive, asn1.Classes.Universal)
-        tag, val, unused = dec.read_unused()
+        tag, (val, unused) = dec.read(asn1.ReadFlags.WithUnused)
         assert val == b'\x12\x34\x56'
         assert unused == 0
 
@@ -649,7 +649,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.BitString, asn1.Types.Constructed, asn1.Classes.Universal)
-        tag, val, unused = dec.read_unused()
+        tag, (val, unused) = dec.read(asn1.ReadFlags.WithUnused)
         assert val == b'\x00\xB0\xB0'
         assert unused == 4
 
@@ -659,7 +659,7 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.BitString, asn1.Types.Primitive, asn1.Classes.Universal)
-        ttag, val, unused = dec.read_unused()
+        tag, (val, unused) = dec.read(asn1.ReadFlags.WithUnused)
         assert val == b'\x01\x23\x45'
         assert unused == 4
 

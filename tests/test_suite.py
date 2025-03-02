@@ -385,7 +385,7 @@ class TestSuiteBitString:
         Using of "unused bits" in internal BIT STRINGs with constructive form of encoding.
         """
         with pytest.raises(asn1.Error) as e:
-            decode_ber.read()
+            decode_ber.read(asn1.ReadFlags.WithUnused)
         assert "unused bits shall be 0" in str(e.value)
 
     @pytest.mark.parametrize('filename', ['tc37.ber'])
@@ -393,7 +393,7 @@ class TestSuiteBitString:
         """
         Using of definite form of length block in case of constructive form of encoding.
         """
-        tag, value, unused = decode_ber.read_unused()
+        tag, (value, unused) = decode_ber.read(asn1.ReadFlags.WithUnused)
         assert tag == (asn1.Numbers.BitString, asn1.Types.Constructed, asn1.Classes.Universal)
         assert isinstance(value, bytes)
         assert value == b'\x00\x10\x10'
@@ -404,7 +404,7 @@ class TestSuiteBitString:
         """
         Using of indefinite form of length block in case of constructive form of encoding.
         """
-        tag, value, unused = decode_ber.read_unused()
+        tag, (value, unused) = decode_ber.read(asn1.ReadFlags.WithUnused)
         assert tag == (asn1.Numbers.BitString, asn1.Types.Constructed, asn1.Classes.Universal)
         assert isinstance(value, bytes)
         assert value == b'\x00\xA3\xB5\xF2\x91\xCD'
@@ -415,7 +415,7 @@ class TestSuiteBitString:
         """
         Using of constructive form of encoding for empty BIT STRING.
         """
-        tag, value, unused = decode_ber.read_unused()
+        tag, (value, unused) = decode_ber.read(asn1.ReadFlags.WithUnused)
         assert tag == (asn1.Numbers.BitString, asn1.Types.Constructed, asn1.Classes.Universal)
         assert isinstance(value, bytes)
         assert value == b''
@@ -429,7 +429,7 @@ class TestSuiteBitString:
         So this case raises an exception
         """
         with pytest.raises(asn1.Error) as e:
-            decode_ber.read_unused()
+            decode_ber.read(asn1.ReadFlags.WithUnused)
         assert "initial byte is missing" in str(e.value)
 
 class TestSuiteOctetString:

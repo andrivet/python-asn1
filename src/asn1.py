@@ -97,6 +97,10 @@ class Classes(Asn1Enum):
     Context = 0x80
     Private = 0xc0
 
+class ReadFlags(IntEnum):
+    OnlyValue = 0x00
+    WithUnused = 0x01
+
 
 Tag = collections.namedtuple('Tag', 'nr typ cls')
 """
@@ -620,12 +624,12 @@ class Decoder(object):
 
     def __init__(self):  # type: () -> None
         """Constructor."""
-        self._stream = None                 # type: Union[io.RawIOBase, None]  # Input stream
-        self._byte = bytes()                # type: bytes # Cached byte (to be able to implement eof)
-        self._position = 0                  # type: int # Due to caching, tell does not give the right position
-        self._tag = None                    # type: Union[Tag, None] # Cached Tag (to be able to implement peek)
-        self._levels = 0                    # type: int # Number of recursive calls
-        self._enters = 0                    # type int # Number of enter calls without leave
+        self._stream = None                     # type: Union[io.RawIOBase, None]  # Input stream
+        self._byte = bytes()                    # type: bytes # Cached byte (to be able to implement eof)
+        self._position = 0                      # type: int # Due to caching, tell does not give the right position
+        self._tag = None                        # type: Union[Tag, None] # Cached Tag (to be able to implement peek)
+        self._levels = 0                        # type: int # Number of recursive calls
+        self._enters = 0                        # type int # Number of enter calls without leave
 
     def start(self, stream):  # type: (Union[io.RawIOBase, bytes]) -> None
         """
@@ -689,26 +693,7 @@ class Decoder(object):
         self._tag = self._decode_tag()
         return self._tag
 
-    def read(self):  # type: () -> Tuple[Union[Tag, None], Any]
-        """
-        This method decodes one ASN.1 tag from the input and returns it as a
-        ``(tag, value, unused)`` tuple. ``tag`` is a 3-tuple ``(nr, typ, cls)``,
-        while ``value`` is a Python object representing the ASN.1 value.
-        The offset in the input is increased so that the next `Decoder.read()`
-        or `Decoder.read_with_unused()` call will return the next tag. In case
-        no more data is available from the input, this method returns ``None``
-        to signal end-of-file.
-
-        Returns:
-            `Tag`, value: The current ASN.1 tag and its value.
-
-        Raises:
-            `Error`
-        """
-        tag, value, _ = self.read_unused()
-        return tag, value
-
-    def read_unused(self):  # type: () -> Tuple[Union[Tag, None], Any, int]
+    def read(self, flags=ReadFlags.OnlyValue):  # type: (ReadFlags) -> Tuple[Union[Tag, None], Any]
         """
         This method decodes one ASN.1 tag from the input and returns it as a
         ``(tag, value, unused)`` tuple. ``tag`` is a 3-tuple ``(nr, typ, cls)``,
@@ -719,9 +704,12 @@ class Decoder(object):
         no more data is available from the input, this method returns ``None``
         to signal end-of-file.
 
+        Args:
+            flags (DecoderFlags): Return only the value or the value and the number of unused bits as a tuple.
+
         Returns:
-            `Tag`, value, unused: The current ASN.1 tag, its value and the
-            number of unused bits.
+            `Tag`, value: The current ASN.1 tag, its value and the
+            number of unused bits if requested in `start`.
 
         Raises:
             `Error`
@@ -731,10 +719,10 @@ class Decoder(object):
         tag = self.peek()
         self._tag = None
         if tag is None:
-            return None, None, 0
+            return None, None
         length = self._decode_length(tag.typ)
-        value, unused = self._decode_value(tag.cls, tag.typ, tag.nr, length)
-        return tag, value, unused
+        value = self._decode_value(tag.cls, tag.typ, tag.nr, length, flags)
+        return tag, value
 
     def eof(self):  # type: () -> bool
         """
@@ -889,7 +877,7 @@ class Decoder(object):
             length = byte
         return length
 
-    def _decode_value(self, cls, typ, nr, length):  # type: (int, int, int, int) -> Tuple[Any, int]
+    def _decode_value(self, cls, typ, nr, length, flags):  # type: (int, int, int, int, ReadFlags) -> Any
         """Read a value from the input. length is -1 in case of an indefinite form."""
         # A primitive type shall have a definite form
         if typ == Types.Primitive and length == INDEFINITE_FORM:
@@ -909,35 +897,38 @@ class Decoder(object):
             raise Error('ASN1 decoding error: the Universal tag number {} shall have a constructed encoding'.format(nr))
 
         if cls != Classes.Universal:
-            return self._decode_bytes(typ, 0, length), 0
+            return self._decode_bytes(typ, 0, length)
 
         # Primitive encoding
         if nr == Numbers.Boolean:
-            return self._decode_boolean(length), 0
+            return self._decode_boolean(length)
         if nr in (Numbers.Integer, Numbers.Enumerated):
-            return self._decode_integer(length), 0
+            return self._decode_integer(length)
         if nr == Numbers.Null:
-            return self._decode_null(length), 0
+            return self._decode_null(length)
         if nr == Numbers.Real:
-            return self._decode_real(length), 0
+            return self._decode_real(length)
         if nr == Numbers.ObjectIdentifier:
-            return self._decode_object_identifier(length), 0
+            return self._decode_object_identifier(length)
 
         # Primitive or Constructed encoding
         if nr == Numbers.OctetString:
-            return self._decode_octet_string(typ, length), 0
+            return self._decode_octet_string(typ, length)
         if nr in (Numbers.PrintableString, Numbers.IA5String,
                   Numbers.UTF8String, Numbers.UTCTime,
                   Numbers.GeneralizedTime):
-            return self._decode_printable_string(typ, nr, length), 0
+            return self._decode_printable_string(typ, nr, length)
         if nr == Numbers.BitString:
-            return self._decode_bitstring(typ, length)
+            value, unused = self._decode_bitstring(typ, length, flags)
+            if flags & ReadFlags.WithUnused:
+                return value, unused
+            return value
 
         # Constructed types
         if nr == Numbers.Sequence:
-            return self._decode_sequence(length), 0
+            return self._decode_sequence(length)
 
-        return self._decode_bytes(typ, 0, length), 0
+        return self._decode_bytes(typ, 0, length)
 
     @staticmethod
     def _check_length(actual_length, expected_length):  # type: (int, int) -> None
@@ -1101,9 +1092,9 @@ class Decoder(object):
         self._tag = None
         return True
 
-    def _decode_bitstring(self, typ, length):  # type: (int, int) -> Tuple[bytes, int]
+    def _decode_bitstring(self, typ, length, flags):  # type: (int, int, ReadFlags) -> Tuple[bytes, int]
         """Decode a bitstring."""
-        data, unused = self._decode_bytes_constructed(Numbers.BitString, length) \
+        data, unused = self._decode_bytes_constructed(Numbers.BitString, length, flags) \
             if typ == Types.Constructed else self._decode_bitstring_primitive(length)
         if self._levels == 0:
             data = shift_bits_right(data, unused)
@@ -1123,38 +1114,41 @@ class Decoder(object):
 
         return content[1:], num_unused_bits
 
-    def _decode_bytes_constructed(self, nr, length):   # type: (int, int) -> Tuple[bytes, int]
+    def _decode_bytes_constructed(self, nr, length, flags):   # type: (int, int, ReadFlags) -> Tuple[bytes, int]
         if length == INDEFINITE_FORM:
-            return self._decode_bytes_indefinite(nr)
+            return self._decode_bytes_indefinite(nr, flags)
         else:
-            return self._decode_bytes_definite(nr, length)
+            return self._decode_bytes_definite(nr, length, flags)
 
-    def _decode_bytes_indefinite(self, nr):  # type: (int) -> Tuple[bytes, int]
+    def _decode_bytes_indefinite(self, nr, flags):  # type: (int, ReadFlags) -> Tuple[bytes, int]
         self._levels += 1
         value = b''
         unused = 0
         while not self._is_eoc():
             if unused > 0:
                 raise Error('ASN1 decoding error: unused bits shall be 0 unless it is the last segment')
-            segment_value, segment_unused = self._decode_bytes_segment(nr)
+            segment_value, segment_unused = self._decode_bytes_segment(nr, flags)
             value += segment_value
             unused = segment_unused
         self._levels -= 1
         return value, unused
 
-    def _decode_bytes_segment(self, nr):  # type: (int) -> Tuple[bytes, int]
+    def _decode_bytes_segment(self, nr, flags):  # type: (int, ReadFlags) -> Tuple[bytes, int]
         tag = self.peek()
         if tag is None:
             raise Error("ASN1 decoding error: premature end of input.")
         if nr != 0 and (tag.nr != nr or tag.cls != Classes.Universal):
             raise Error(
                 'ASN1 decoding error: invalid tag (cls={}, nr={}) in a constructed type.'.format(tag.cls, tag.nr))
-        tag, value, unused = self.read_unused()
+        tag, value = self.read(flags)
+        unused = 0
+        if flags & ReadFlags.WithUnused:
+            value, unused = value
         if not isinstance(value, bytes):
             raise Error('ASN1 decoding error: bytes were expected instead of the type {}'.format(type(value)))
         return value, unused
 
-    def _decode_bytes_definite(self, nr, length):  # type: (int, int) -> Tuple[bytes, int]
+    def _decode_bytes_definite(self, nr, length, flags):  # type: (int, int, ReadFlags) -> Tuple[bytes, int]
         self._levels += 1
         value = b''
         unused = 0
@@ -1162,7 +1156,7 @@ class Decoder(object):
         while self._get_current_position() - start_position < length:
             if unused > 0:
                 raise Error('ASN1 decoding error: unused bits shall be 0 unless it is the last segment')
-            segment_value, segment_unused = self._decode_bytes_segment(nr)
+            segment_value, segment_unused = self._decode_bytes_segment(nr, flags)
             value += segment_value
             unused = segment_unused
 
@@ -1176,7 +1170,7 @@ class Decoder(object):
         """Decode an octet string."""
         if typ == Types.Primitive:
             return self._read_bytes(length)
-        value, unused = self._decode_bytes_constructed(Numbers.OctetString, length)
+        value, unused = self._decode_bytes_constructed(Numbers.OctetString, length, ReadFlags.OnlyValue)
         assert unused == 0
         return value
 
@@ -1184,7 +1178,7 @@ class Decoder(object):
         """Decode a string."""
         if typ == Types.Primitive:
             return self._read_bytes(length)
-        value, unused = self._decode_bytes_constructed(nr, length)
+        value, unused = self._decode_bytes_constructed(nr, length, ReadFlags.OnlyValue)
         assert unused == 0
         return value
 
