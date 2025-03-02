@@ -97,6 +97,7 @@ class Classes(Asn1Enum):
     Context = 0x80
     Private = 0xc0
 
+
 class ReadFlags(IntEnum):
     OnlyValue = 0x00
     WithUnused = 0x01
@@ -175,6 +176,14 @@ def is_negative_infinity(x):
 
 def is_nan(x):
     return math.isnan(x)
+
+
+def is_iterable(value):
+    try:
+        iter(value)
+        return True
+    except TypeError:
+        return False
 
 
 class Error(Exception):
@@ -325,8 +334,13 @@ class Encoder(object):
         if cls != Classes.Universal and nr is None:
             raise Error('Specify a tag number (nr) when using classes Application, Context or Private')
 
+        # Constructed
+        if nr is None and not isinstance(value, str) and not isinstance(value, bytes) and is_iterable(value):
+            nr = Numbers.Sequence
+            if typ is None:
+                typ = Types.Constructed
         # Primitive
-        if nr is None:
+        elif nr is None:
             if isinstance(value, bool):
                 nr = Numbers.Boolean
             elif isinstance(value, int):
@@ -343,21 +357,19 @@ class Encoder(object):
             if typ is None:
                 typ = Types.Primitive
 
-        # Constructed
-        if nr is None and isinstance(value, List):
-            nr = Numbers.Sequence
-            if typ is None:
-                typ = Types.Constructed
-
         if typ is None:
             typ = Types.Primitive
 
         self._check_type(nr, typ, cls)
 
-        encoded = self._encode_value(cls, nr, value)
-        self._emit_tag(nr, typ, cls)
-        self._emit_length(len(encoded))
-        self._write_bytes(encoded)
+        if typ == Types.Primitive:
+            encoded = self._encode_value(cls, nr, value)
+            self._emit_tag(nr, typ, cls)
+            self._emit_length(len(encoded))
+            self._write_bytes(encoded)
+        else:
+            self._emit_tag(nr, typ, cls)
+            self._emit_sequence(value)
 
     def output(self):  # type: () -> bytes
         """
@@ -426,7 +438,9 @@ class Encoder(object):
 
     def _emit_length(self, length):  # type: (int) -> None
         """Emit length bytes."""
-        if length < 128:
+        if length == INDEFINITE_FORM:
+            self._emit_indefinite_length()
+        elif length < 128:
             self._emit_length_short(length)
         else:
             self._emit_length_long(length)
@@ -484,6 +498,7 @@ class Encoder(object):
             return self._encode_real(value)
         if nr == Numbers.ObjectIdentifier:
             return self._encode_object_identifier(value)
+
         return value
 
     @staticmethod
@@ -618,18 +633,27 @@ class Encoder(object):
         result.reverse()
         return bytes(result)
 
+    def _emit_sequence(self, value):  # type: (List) -> bytes
+        if not is_iterable(value):
+            raise Error('value must be an iterable')
+
+        self._emit_indefinite_length()
+        for item in iter(value):
+            self.write(item)
+        self._emit_eoc()
+
 
 class Decoder(object):
     """ASN.1 decoder. Understands BER (and DER which is a subset)."""
 
     def __init__(self):  # type: () -> None
         """Constructor."""
-        self._stream = None                     # type: Union[io.RawIOBase, None]  # Input stream
-        self._byte = bytes()                    # type: bytes # Cached byte (to be able to implement eof)
-        self._position = 0                      # type: int # Due to caching, tell does not give the right position
-        self._tag = None                        # type: Union[Tag, None] # Cached Tag (to be able to implement peek)
-        self._levels = 0                        # type: int # Number of recursive calls
-        self._enters = 0                        # type int # Number of enter calls without leave
+        self._stream = None     # type: Union[io.RawIOBase, io.BufferedIOBase, None]  # Input stream
+        self._byte = bytes()    # type: bytes # Cached byte (to be able to implement eof)
+        self._position = 0      # type: int # Due to caching, tell does not give the right position
+        self._tag = None        # type: Union[Tag, None] # Cached Tag (to be able to implement peek)
+        self._levels = 0        # type: int # Number of recursive calls
+        self._ends = []         # type: List[int] # End of the current element (or INDEFINITE_FORM) for enter / leave
 
     def start(self, stream):  # type: (Union[io.RawIOBase, bytes]) -> None
         """
@@ -651,7 +675,7 @@ class Decoder(object):
         Raises:
             `Error`
         """
-        if not isinstance(stream, bytes) and not isinstance(stream, io.RawIOBase):
+        if not isinstance(stream, bytes) and not isinstance(stream, io.RawIOBase) and not isinstance(stream, io.BufferedIOBase):
             raise Error('Expecting bytes or a subclass of io.RawIOBase.')
 
         self._stream = io.BytesIO(stream) if isinstance(stream, bytes) else stream  # type: ignore
@@ -659,7 +683,7 @@ class Decoder(object):
         self._byte = bytes()
         self._position = 0
         self._levels = 0
-        self._enters = 0
+        self._ends = []
 
     def peek(self):  # type: () -> Union[Tag, None]
         """
@@ -690,7 +714,12 @@ class Decoder(object):
             return self._tag
         if self.eof():
             return None
+        end = self._ends[-1] if len(self._ends) > 0 else None
+        if end is not None and end != INDEFINITE_FORM and self._get_current_position() >= end:
+            return None
         self._tag = self._decode_tag()
+        if end == INDEFINITE_FORM and self._tag == (0, 0, 0):
+            return None
         return self._tag
 
     def read(self, flags=ReadFlags.OnlyValue):  # type: (ReadFlags) -> Tuple[Union[Tag, None], Any]
@@ -762,9 +791,9 @@ class Decoder(object):
             return
         if tag.typ != Types.Constructed:
             raise Error('Cannot enter a primitive tag.')
-        self._decode_length(tag.typ)
+        length = self._decode_length(tag.typ)
         self._tag = None
-        self._enters += 1
+        self._ends.append(self._get_current_position() + length)
 
     def leave(self):  # type: () -> None
         """
@@ -782,10 +811,10 @@ class Decoder(object):
         """
         if self._stream is None:
             raise Error('No input selected. Call start() first.')
-        if self._enters <= 0:
+        if len(self._ends) <= 0:
             raise Error('Call to leave() without a corresponding enter() call.')
         self._tag = None
-        self._enters -= 1
+        self._ends.pop()
 
     def _get_current_position(self):  # type: () -> int
         return 0 if self._stream is None else self._position
