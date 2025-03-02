@@ -52,6 +52,13 @@ Python-ASN1 relies on `Python-Future <https://python-future.org>`_ for Python 2 
 
   pip install future
 
+Python-ASN1 relies on `type hints <https://docs.python.org/3/library/typing.html>`_. For Python 2.7, a backport of the standard library typing module has to be installed:
+
+.. code-block:: sh
+
+  pip install typing
+
+This is not necessary for Python 3.5 and higher since it is part of the standard library.
 
 How to install Python-asn1
 ==========================
