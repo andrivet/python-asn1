@@ -13,9 +13,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import base64
+import math
 from builtins import int
 
-import math
 import pytest
 
 import asn1
