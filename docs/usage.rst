@@ -21,34 +21,69 @@ constructed data types. Primitive data types can be encoded and decoded
 directly with `read()` and `write()` methods.  For these types, ASN.1 types are
 mapped directly to Python types and vice versa, as per the table below:
 
-================ ================= =============
-ASN.1 type       Python type       Default
-================ ================= =============
-Boolean          bool              yes
-Integer          int               yes
-OctetString      bytes             yes
-PrintableString  str               yes
-Null             None              yes
-ObjectIdentifier bytes             no
-Enumerated       int               no
-================ ================= =============
+================ ========== =========== =============
+ASN.1 type       Tag Number Decoding    Encoding
+================ ========== =========== =============
+Boolean          0x01       bool        bool
+Integer          0x02       int         int
+Null             0x05       None        None
+ObjectIdentifier 0x06       str
+Real             0x09       float       float
+Enumerated       0x0A       int
+UTCTime          0x17
+GeneralizedTime  0x18
+Date             0x1F
+TimeOfDay        0x20
+DateTime         0x21
+Duration         0x22
+================ ========== =========== =============
 
-The column **default** is relevant for encoding only.  Because
-ASN.1 has more data types than Python, the situation arises that one Python
-type corresponds to multiple ASN.1 types. In this sitution the to be encoded
+Because ASN.1 has more data types than Python, the situation arises that one Python
+type corresponds to multiple ASN.1 types. In this situation, the to be encoded
 ASN.1 type cannot be determined from the Python type. The solution
 implemented in Python-ASN1 is that the most frequently used type will be the
-implicit default, and if another type is desired than that must be specified
+implicit default. This is indicated in the `Encoding` column.
+If another type is desired than that must be specified
 explicitly through the API.
 
-For constructed types, no type mapping is done at all, even for types where
-such a mapping would be possible such as the ASN.1 type **sequence
-of** which could be mapped to a Python list. For such types a stack
-based approach is used instead. In this approach, the user needs to
-explicitly enter/leave the constructed type using the
+Some ASN.1 types can be either primitive or constructed. They can be encoded
+and decoded like primitive types. The following table shows the mapping between
+ASN.1 types and Python types.
+
+================ ========== =========== =============
+ASN.1 type       Tag Number Decoding    Encoding
+================ ========== =========== =============
+BitString        0x03       bytes
+OctetString      0x04       bytes       bytes
+UTF8String       0x0C       str
+NumericString    0x12       str
+PrintableString  0x13       str         str
+T61String        0x14       str
+VideotextString  0x15       str
+IA5String        0x16       str
+GraphicString    0x19       str
+VisibleString    0x1A       str
+GeneralString    0x1B       str
+UniversalString  0x1C       str
+CharacterString  0x1D       str
+UnicodeString    0x1E       str
+================ ========== =========== =============
+
+For constructed types, there are two possibilities. The first is to treat them
+as a sequence of types. In this case, the encoder and decoder will automatically
+map the ASN.1 types to Python types and vice versa.
+
+================ ========== =========== =============
+ASN.1 type       Tag Number Decoding    Encoding
+================ ========== =========== =============
+Sequence         0x10       list        list
+Set              0x11       list
+================ ========== =========== =============
+
+The second possibility is to treat them as a stack of types. In this approach,
+the user needs to explicitly enter/leave the constructed type using the
 `Encoder.enter()` and `Encoder.leave()` methods of the encoder and the
 `Decoder.enter()` and `Decoder.leave()` methods of the decoder.
-
 
 Encoding
 --------
@@ -61,9 +96,56 @@ If you want to encode data and retrieve its DER-encoded representation, use code
 
   encoder = asn1.Encoder()
   encoder.start()
-  encoder.write('1.2.3', asn1.ObjectIdentifier)
+  encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
   encoded_bytes = encoder.output()
 
+It is also possible to encode data directly to a file or any stream:
+
+.. code-block:: python
+
+  import asn1
+
+  with open('output.der', 'wb') as f:
+    encoder = asn1.Encoder()
+    encoder.start(f)
+    encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
+
+You can encode complex data structures such as sequences and sets:
+
+.. code-block:: python
+
+  import asn1
+
+  with open('output.der', 'wb') as f:
+        encoder = asn1.Encoder()
+        encoder.start(f)
+        encoder.write(['test1', 'test2', [
+            1,
+            0.125,
+            b'\x01\x02\x03'
+        ]])
+
+ASN.1 types are automatically mapped to Python types.
+If you want to precisely specify the ASN.1 type, you have to use the `Encoder.enter()` and `Encoder.leave()` methods:
+
+.. code-block:: python
+
+  import asn1
+
+  with open('output.der', 'wb') as f:
+        encoder = asn1.Encoder()
+        encoder.start(f)
+        encoder.enter(asn1.Numbers.Sequence)
+        encoder.write('test1', asn1.Numbers.PrintableString)
+        encoder.write('test2', asn1.Numbers.PrintableString)
+        encoder.enter(asn1.Numbers.Sequence)
+        encoder.write(1, asn1.Numbers.Integer)
+        encoder.write(0.125, asn1.Numbers.Real)
+        encoder.write(b'\x01\x02\x03', asn1.Numbers.OctetString)
+        encoder.leave()
+        encoder.leave()
+
+This also allows to encode data progressively, without having to keep everything in memory.
 
 Decoding
 --------
@@ -78,30 +160,81 @@ If you want to decode ASN.1 from DER or BER encoded bytes, use code such as:
   decoder.start(encoded_bytes)
   tag, value = decoder.read()
 
+It is also possible to decode data directly from a file or any stream:
+
+.. code-block:: python
+
+  import asn1
+
+  with open('input.der', 'rb') as f:
+    decoder = asn1.Decoder()
+    decoder.start(f)
+    tag, value = decoder.read()
+
+You can decode complex data structures. The decoder will automatically map ASN.1 types to Python types:
+
+.. code-block:: python
+
+  import asn1
+
+    with open('example7.der', 'rb') as f:
+        decoder = asn1.Decoder()
+        decoder.start(f)
+        tag, value = decoder.read()
+        print(tag)
+        pprint.pprint(value)
 
 Constants
 ---------
 
 A few constants are defined in the `asn1` module. The
-constants immediately below correspond to ASN.1 numbers. They can be used as
+constants immediately below correspond to ASN.1 tag numbers.
+They can be used as
 the ``nr`` parameter of the
 `Encoder.write()` method, and are returned as the
 first part of a ``(nr, typ, cls)`` tuple as returned by
 `Decoder.peek()` and
 `Decoder.read()`.
 
-================ ===========
-Constant         Value (hex)
-================ ===========
-Boolean          0x01
-Integer          0x02
-OctetString      0x04
-Null             0x05
-ObjectIdentifier 0x06
-Enumerated       0x0a
-Sequence         0x10
-Set              0x11
-================ ===========
+==================================== ===========
+Constant                             Value (hex)
+==================================== ===========
+Numbers.Boolean                      0x01
+Numbers.Integer                      0x02
+Numbers.BitString                    0x03
+Numbers.OctetString                  0x04
+Numbers.Null                         0x05
+Numbers.ObjectIdentifier             0x06
+Numbers.ObjectDescriptor             0x07
+Numbers.External                     0x08
+Numbers.Real                         0x09
+Numbers.Enumerated                   0x0a
+Numbers.EmbeddedPDV                  0x0b
+Numbers.UTF8String                   0x0c
+Numbers.RelativeOID                  0x0d
+Numbers.Time                         0x0e
+Numbers.Sequence                     0x10
+Numbers.Set                          0x11
+Numbers.NumericString                0x12
+Numbers.PrintableString              0x13
+Numbers.T61String                    0x14
+Numbers.VideotextString              0x15
+Numbers.IA5String                    0x16
+Numbers.UTCTime                      0x17
+Numbers.GeneralizedTime              0x18
+Numbers.GraphicString                0x19
+Numbers.VisibleString                0x1a
+Numbers.GeneralString                0x1b
+Numbers.UniversalString              0x1c
+Numbers.CharacterString              0x1d
+Numbers.UnicodeString                0x1e
+Numbers.Date                         0x1f
+Numbers.TimeOfDay                    0x20
+Numbers.DateTime                     0x21
+Numbers.Duration                     0x22
+Numbers.OIDinternationalized         0x23
+Numbers.RelativeOIDinternationalized 0x24
+==================================== ===========
 
 The following constants define the two available encoding types (primitive
 and constructed) for ASN.1 data types. As above they can be used with the
@@ -109,23 +242,23 @@ and constructed) for ASN.1 data types. As above they can be used with the
 `Decoder.peek()` and
 `Decoder.read()`.
 
-================ ===========
-Constant         Value (hex)
-================ ===========
-TypeConstructed  0x20
-TypePrimitive    0x00
-================ ===========
+================== ===========
+Constant           Value (hex)
+================== ============
+Types.Constructed  0x20
+Types.Primitive    0x00
+================== ===========
 
-Finally the constants below define the different ASN.1 classes.  As above
+Finally the constants below define the different ASN.1 classes. As above
 they can be used with the `Encoder.write()` and are
 returned by `Decoder.peek()` and
 `Decoder.read()`.
 
-================ ===========
-Constant         Value (hex)
-================ ===========
-ClassUniversal   0x00
-ClassApplication 0x40
-ClassContext     0x80
-ClassPrivate     0xc0
-================ ===========
+=================== ===========
+Constant            Value (hex)
+=================== ===========
+Classes.Universal   0x00
+Classes.Application 0x40
+Classes.Context     0x80
+Classes.Private     0xc0
+=================== ===========
