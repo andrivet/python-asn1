@@ -1008,7 +1008,7 @@ class Decoder(object):
             raise Error('ASN1 decoding error: Exponent ({}), mantissa ({}) or factor ({}) too big.'.format(exponent, mantissa, scaling))
         if value == 0:
             raise Error('ASN1 decoding error: invalid encoding for +0.')
-        return value
+        return float(value)  # Always as a float
 
     @staticmethod
     def _decode_real_binary_exponent(values):  # type: (bytes) -> Tuple[int, int]

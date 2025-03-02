@@ -15,6 +15,7 @@ from __future__ import unicode_literals
 import base64
 from builtins import int
 
+import math
 import pytest
 
 import asn1
@@ -422,6 +423,34 @@ class TestEncoder(object):
         enc.write(0.15625)
         res = enc.output()
         assert res == b'\x09\x03\x80\xFB\x05'
+        enc.start()
+        enc.write(1.0)
+        res = enc.output()
+        assert res == b'\x09\x03\x80\x00\x01'
+        enc.start()
+        enc.write(-1.0)
+        res = enc.output()
+        assert res == b'\x09\x03\xC0\x00\x01'
+        enc.start()
+        enc.write(2.0)
+        res = enc.output()
+        assert res == b'\x09\x03\x80\x01\x01'
+        enc.start()
+        enc.write(0.5)
+        res = enc.output()
+        assert res == b'\x09\x03\x80\xFF\x01'
+        enc.start()
+        enc.write(10.5)
+        res = enc.output()
+        assert res == b'\x09\x03\x80\xFF\x15'
+        enc.start()
+        enc.write(-3.25)
+        res = enc.output()
+        assert res == b'\x09\x03\xC0\xFE\x0D'
+        enc.start()
+        enc.write(1024.0)
+        res = enc.output()
+        assert res == b'\x09\x03\x80\x0A\x01'
 
 class TestDecoder(object):
     """Test suite for ASN1 Decoder."""
@@ -1155,6 +1184,102 @@ class TestDecoder(object):
         assert value == b'\x00\x22\xF2\x10\x00\x6D\x18\x8F'
 
         assert dec.peek() is None
+
+    def test_real_zero(self):
+        buf = b'\x09\x00'
+        enc = asn1.Decoder()
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == 0.0
+
+    def test_real_negative_zero(self):
+        buf = b'\x09\x01\x43'
+        enc = asn1.Decoder()
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == 0.0 and math.copysign(1, value) == -1.0
+
+    def test_real_negative_infinite(self):
+        buf = b'\x09\x01\x41'
+        enc = asn1.Decoder()
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == float('-inf')
+
+    def test_real_positive_infinite(self):
+        buf = b'\x09\x01\x40'
+        enc = asn1.Decoder()
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == float('inf')
+
+    def test_real_positive_nan(self):
+        buf = b'\x09\x01\x42'
+        enc = asn1.Decoder()
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value != value
+
+    def test_real(self):
+        buf = b'\x09\x03\x80\xFB\x05'
+        enc = asn1.Decoder()
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == 0.15625
+        buf = b'\x09\x03\x80\x00\x01'
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == 1.0
+        buf = b'\x09\x03\xC0\x00\x01'
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == -1.0
+        buf = b'\x09\x03\x80\x01\x01'
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == 2.0
+        buf = b'\x09\x03\x80\xFF\x01'
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == 0.5
+        buf = b'\x09\x03\x80\xFF\x15'
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == 10.5
+        buf = b'\x09\x03\xC0\xFE\x0D'
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == -3.25
+        buf = b'\x09\x03\x80\x0A\x01'
+        enc.start(buf)
+        tag, value = enc.read()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert isinstance(value, float)
+        assert value == 1024.0
 
 
 class TestEncoderDecoder(object):
