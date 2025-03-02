@@ -8,43 +8,65 @@
 # the file "AUTHORS" for a complete overview.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
+
 from builtins import open, bytes, str
-import sys
+import asn1
 import base64
 import binascii
-
-import asn1
+import io
+import sys
+import typing
 import optparse
 
 
-def read_pem(input_file):
-    """Read PEM formatted input."""
-    data = []
-    state = 0
-    for line in input_file:
-        if state == 0:
-            if line.startswith('-----BEGIN'):
-                state = 1
-        elif state == 1:
-            if line.startswith('-----END'):
-                state = 2
-            else:
-                data.append(line)
-        elif state == 2:
-            break
-    if state != 2:
-        raise ValueError('No PEM encoded input found')
-    data = ''.join(data)
-    return base64.b64decode(data)
+class PEMBinaryIO(io.RawIOBase):
+    """A RawIOBase implementation that reads and writes PEM encoded data."""
+    def __init__(self, stream):
+        self._stream = stream
+        self._buffer = b''
+        self._state = 0
+
+    def read(self, size=-1):
+        while size < 0 or len(self._buffer) < size:
+            line = self._stream.readline()
+            if not line:
+                break
+            line = line.strip()
+
+            if self._state == 0:
+                if line.startswith('-----BEGIN'):
+                    self._state = 1
+            elif self._state == 1:
+                if line.startswith('-----END'):
+                    self._state = 2
+                else:
+                    self._buffer += base64.b64decode(line)
+
+        # All data?
+        if size < 0:
+            data, self._buffer = self._buffer, b''
+            return data
+
+        # Only a portion of the data
+        data, self._buffer = self._buffer[:size], self._buffer[size:]
+        return data
+
+    def write(self, data):
+        self._stream.write(base64.b64encode(data).decode('ascii'))
+        self._stream.write('\n')
+
+    def close(self):
+        self._stream.close()
 
 
 tag_id_to_string_map = {
     asn1.Numbers.Boolean: "BOOLEAN",
     asn1.Numbers.Integer: "INTEGER",
     asn1.Numbers.BitString: "BIT STRING",
-    asn1.Numbers.OctetString: "OCTET STRING",
     asn1.Numbers.Null: "NULL",
-    asn1.Numbers.ObjectIdentifier: "OBJECT",
+    asn1.Numbers.OctetString: "OCTET STRING",
+    asn1.Numbers.ObjectIdentifier: "OBJECT IDENTIFIER",
+    asn1.Numbers.ObjectDescriptor: "OBJECT DESCRIPTOR",
     asn1.Numbers.PrintableString: "PRINTABLESTRING",
     asn1.Numbers.IA5String: "IA5STRING",
     asn1.Numbers.UTCTime: "UTCTIME",
@@ -117,12 +139,11 @@ def object_identifier_to_string(identifier):
         return object_id_to_string_map[identifier]
     return identifier
 
-
 def value_to_string(tag_number, value):
     if tag_number == asn1.Numbers.ObjectIdentifier:
         return object_identifier_to_string(value)
     elif isinstance(value, bytes):
-        return '0x' + str(binascii.hexlify(value).upper())
+        return str(binascii.hexlify(value, ' ', 1).upper(), encoding='ascii')
     elif isinstance(value, str):
         return value
     else:
@@ -133,6 +154,8 @@ def pretty_print(input_stream, output_stream, indent=0):
     """Pretty print ASN.1 data."""
     while not input_stream.eof():
         tag = input_stream.peek()
+        if tag is None:
+            return
         if tag.typ == asn1.Types.Primitive:
             tag, value = input_stream.read()
             output_stream.write(' ' * indent)
@@ -149,24 +172,24 @@ def pretty_print(input_stream, output_stream, indent=0):
 
 parser = optparse.OptionParser()
 parser.add_option('-p', '--pem', dest='mode', action='store_const', const='pem', help='PEM encoded input')
-parser.add_option('-r', '--raw', dest='mode', action='store_const', const='raw', help='raw input')
 parser.add_option('-o', '--output', dest='output', help='output to FILE instead', metavar='FILE')
 parser.set_default('mode', 'pem')
 (opts, args) = parser.parse_args()
 
+if len(args) != 1:
+    parser.error('Please provide an input file')
+    exit(1)
+
+decoder = asn1.Decoder()
+
 if opts.mode == 'pem':
-    input_file = open(args[0], 'r')
-    input_data = read_pem(input_file)
+    decoder.start(PEMBinaryIO(open(args[0], 'r')))
 else:
-    input_file = open(args[0], 'rb')
-    input_data = input_file.read()
+    decoder.start(typing.cast(io.RawIOBase, open(args[0], 'rb')))
 
 if opts.output:
     output_file = open(opts.output, 'w')
 else:
-    output_file = sys.stdout
-
-decoder = asn1.Decoder()
-decoder.start(input_data)
+    output_file = typing.cast(io.TextIOWrapper, sys.stdout)
 
 pretty_print(decoder, output_file)
