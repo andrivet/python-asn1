@@ -11,10 +11,14 @@
 # https://www.strozhevsky.com/free_docs/free_asn1_testsuite_descr.pdf
 
 import os
-from typing import Generator, Any
-from builtins import bytes, int, str
+from builtins import bytes
+from builtins import int
+from builtins import str
+from typing import Any
+from typing import Generator
 
 import pytest
+
 import asn1
 
 

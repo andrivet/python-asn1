@@ -215,7 +215,7 @@ class TestEncoder(object):
         enc.write(b'foo')
         enc.leave()
         res = enc.output()
-        assert res == b'\x30\x08\x02\x01\x01\x04\x03foo'
+        assert res == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
     def test_sequence_of(self):
         enc = asn1.Encoder()
@@ -225,7 +225,7 @@ class TestEncoder(object):
         enc.write(2)
         enc.leave()
         res = enc.output()
-        assert res == b'\x30\x06\x02\x01\x01\x02\x01\x02'
+        assert res == b'\x30\x80\x02\x01\x01\x02\x01\x02\x00\x00'
 
     def test_set(self):
         enc = asn1.Encoder()
@@ -235,7 +235,7 @@ class TestEncoder(object):
         enc.write(b'foo')
         enc.leave()
         res = enc.output()
-        assert res == b'\x31\x08\x02\x01\x01\x04\x03foo'
+        assert res == b'\x31\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
     def test_set_of(self):
         enc = asn1.Encoder()
@@ -245,7 +245,7 @@ class TestEncoder(object):
         enc.write(2)
         enc.leave()
         res = enc.output()
-        assert res == b'\x31\x06\x02\x01\x01\x02\x01\x02'
+        assert res == b'\x31\x80\x02\x01\x01\x02\x01\x02\x00\x00'
 
     def test_context(self):
         enc = asn1.Encoder()
@@ -254,7 +254,7 @@ class TestEncoder(object):
         enc.write(1)
         enc.leave()
         res = enc.output()
-        assert res == b'\xa1\x03\x02\x01\x01'
+        assert res == b'\xa1\x80\x02\x01\x01\x00\x00'
 
     def test_application(self):
         enc = asn1.Encoder()
@@ -263,7 +263,7 @@ class TestEncoder(object):
         enc.write(1)
         enc.leave()
         res = enc.output()
-        assert res == b'\x61\x03\x02\x01\x01'
+        assert res == b'\x61\x80\x02\x01\x01\x00\x00'
 
     def test_private(self):
         enc = asn1.Encoder()
@@ -272,16 +272,16 @@ class TestEncoder(object):
         enc.write(1)
         enc.leave()
         res = enc.output()
-        assert res == b'\xe1\x03\x02\x01\x01'
+        assert res == b'\xe1\x80\x02\x01\x01\x00\x00'
 
     def test_long_tag_id(self):
         enc = asn1.Encoder()
         enc.start()
-        enc.enter(0xffff)
+        enc.enter(0xffff, asn1.Classes.Private)
         enc.write(1)
         enc.leave()
         res = enc.output()
-        assert res == b'\x3f\x83\xff\x7f\x03\x02\x01\x01'
+        assert res == b'\xff\x83\xff\x7f\x80\x02\x01\x01\x00\x00'
 
     def test_contextmanager_construct(self):
         enc = asn1.Encoder()
@@ -292,14 +292,14 @@ class TestEncoder(object):
             enc.write(b'foo')
 
         res = enc.output()
-        assert res == b'\x30\x08\x02\x01\x01\x04\x03foo'
+        assert res == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
     def test_contextmanager_calls_enter(self):
-        class TestEncoder(asn1.Encoder):
+        class MyTestEncoder(asn1.Encoder):
             def enter(self, nr, cls=None):
                 raise RuntimeError()
 
-        enc = TestEncoder()
+        enc = MyTestEncoder()
         enc.start()
 
         with pytest.raises(RuntimeError):
@@ -307,11 +307,11 @@ class TestEncoder(object):
                 enc.write(1)
 
     def test_contextmanager_calls_leave(self):
-        class TestEncoder(asn1.Encoder):
+        class MyTestEncoder(asn1.Encoder):
             def leave(self):
                 raise RuntimeError()
 
-        enc = TestEncoder()
+        enc = MyTestEncoder()
         enc.start()
 
         with pytest.raises(RuntimeError):
@@ -337,7 +337,6 @@ class TestEncoder(object):
         enc.start()
         pytest.raises(asn1.Error, enc.leave)
         enc.enter(asn1.Numbers.Sequence)
-        pytest.raises(asn1.Error, enc.output)
         enc.leave()
         pytest.raises(asn1.Error, enc.leave)
 
@@ -353,7 +352,7 @@ class TestEncoder(object):
         pytest.raises(asn1.Error, enc.write, 'foo.bar', asn1.Numbers.ObjectIdentifier)
 
     def test_default_encoding(self):
-        " Check that the encoder implicitly chooses the correct asn1 type "
+        """ Check that the encoder implicitly chooses the correct asn1 type """
         def check_defaults(value, number):
             default, explicit = asn1.Encoder(), asn1.Encoder()
             default.start()
@@ -382,6 +381,47 @@ class TestEncoder(object):
         res = enc.output()
         assert res == b'\x8a\x05\x00\x01\x02\x03\x04'
 
+    def test_real_zero(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.write(0.0)
+        res = enc.output()
+        assert res == b'\x09\x00'
+
+    def test_real_negative_zero(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.write(-0.0)
+        res = enc.output()
+        assert res == b'\x09\x01\x43'
+
+    def test_real_negative_infinite(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.write(float('-inf'))
+        res = enc.output()
+        assert res == b'\x09\x01\x41'
+
+    def test_real_positive_infinite(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.write(float('+inf'))
+        res = enc.output()
+        assert res == b'\x09\x01\x40'
+
+    def test_real_positive_nan(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.write(float('nan'))
+        res = enc.output()
+        assert res == b'\x09\x01\x42'
+
+    def test_real(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.write(0.15625)
+        res = enc.output()
+        assert res == b'\x09\x03\x80\xFB\x05'
 
 class TestDecoder(object):
     """Test suite for ASN1 Decoder."""
@@ -392,7 +432,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Boolean, asn1.Types.Primitive, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.Boolean: 0x01>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert isinstance(val, int)
         assert val
@@ -413,7 +452,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Integer, asn1.Types.Primitive, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.Integer: 0x02>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert isinstance(val, int)
         assert val == 1
@@ -458,13 +496,102 @@ class TestDecoder(object):
         tag, val = dec.read()
         assert val == -129
 
+    def test_real_base2(self):
+        buf = b'\x09\x03\x80\xFB\x05'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        tag, val = dec.read()
+        assert isinstance(val, float)
+        assert val == 0.15625
+
+    def test_real_base8(self):
+        buf = b'\x09\x03\x90\xFE\x0A'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        tag, val = dec.read()
+        assert isinstance(val, float)
+        assert val == 0.15625
+
+    def test_real_base16(self):
+        buf = b'\x09\x03\xAC\xFE\x05'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        tag, val = dec.read()
+        assert isinstance(val, float)
+        assert val == 0.15625
+
+    def test_real_base10_nr2(self):
+        buf = b'\x09\x08\x02\x30\x2E\x31\x35\x36\x32\x35'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        tag, val = dec.read()
+        assert isinstance(val, float)
+        assert val == 0.15625
+
+    def test_real_base10_nr3(self):
+        buf = b'\x09\x0B\x03\x30\x2E\x31\x35\x36\x32\x35\x45\x2D\x30'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        tag, val = dec.read()
+        assert isinstance(val, float)
+        assert val == 0.15625
+
+    def test_real_infinity_plus(self):
+        buf = b'\x09\x01\x40'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        tag, val = dec.read()
+        assert isinstance(val, float)
+        assert val == float('inf')
+
+    def test_real_infinity_minus(self):
+        buf = b'\x09\x01\x41'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        tag, val = dec.read()
+        assert isinstance(val, float)
+        assert val == float('-inf')
+
+    def test_real_nan(self):
+        buf = b'\x09\x01\x42'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        tag, val = dec.read()
+        assert isinstance(val, float)
+        assert val != val # Simple way to test NaN (unequal to all values including itself)
+
+    def test_real_zero_minus(self):
+        buf = b'\x09\x01\x43'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.Real, asn1.Types.Primitive, asn1.Classes.Universal)
+        tag, val = dec.read()
+        assert isinstance(val, float)
+        assert val == 0
+
     def test_octet_string(self):
         buf = b'\x04\x03foo'
         dec = asn1.Decoder()
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.OctetString, asn1.Types.Primitive, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.OctetString: 0x04>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val == b'foo'
 
@@ -474,19 +601,28 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.PrintableString, asn1.Types.Primitive, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.PrintableString: 0x13>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val == u'foo'
 
-    def test_bitstring(self):
+    def test_bitstring_primitive(self):
         buf = b'\x03\x04\x00\x12\x34\x56'
         dec = asn1.Decoder()
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.BitString, asn1.Types.Primitive, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.BitString: 0x03>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
-        tag, val = dec.read()
+        tag, val, unused = dec.read_unused()
         assert val == b'\x12\x34\x56'
+        assert unused == 0
+
+    def test_bitstring_constructed(self):
+        buf = b'\x23\x0C\x03\x02\x00\x0B\x03\x02\x00\x0B\x03\x02\x04\x0F'
+        dec = asn1.Decoder()
+        dec.start(buf)
+        tag = dec.peek()
+        assert tag == (asn1.Numbers.BitString, asn1.Types.Constructed, asn1.Classes.Universal)
+        tag, val, unused = dec.read_unused()
+        assert val == b'\x00\xB0\xB0'
+        assert unused == 4
 
     def test_bitstring_unused_bits(self):
         buf = b'\x03\x04\x04\x12\x34\x50'
@@ -494,9 +630,9 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.BitString, asn1.Types.Primitive, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.BitString: 0x03>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
-        tag, val = dec.read()
+        ttag, val, unused = dec.read_unused()
         assert val == b'\x01\x23\x45'
+        assert unused == 4
 
     def test_unicode_printable_string(self):
         buf = b'\x13\x05\x66\x6f\x6f\xc3\xa9'
@@ -504,7 +640,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.PrintableString, asn1.Types.Primitive, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.PrintableString: 0x13>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val == u'fooé'
 
@@ -514,7 +649,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Null, asn1.Types.Primitive, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.Null: 0x05>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert val is None
 
@@ -560,7 +694,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Enumerated, asn1.Types.Primitive, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.Enumerated: 0x0a>, typ=<Types.Primitive: 0x00>, cls=<Classes.Universal: 0x00>)"
         tag, val = dec.read()
         assert isinstance(val, int)
         assert val == 1
@@ -571,11 +704,12 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Sequence, asn1.Types.Constructed, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.Sequence: 0x10>, typ=<Types.Constructed: 0x20>, cls=<Classes.Universal: 0x00>)"
         dec.enter()
         tag, val = dec.read()
+        assert isinstance(val, int)
         assert val == 1
         tag, val = dec.read()
+        assert isinstance(val, bytes)
         assert val == b'foo'
 
     def test_sequence_of(self):
@@ -584,7 +718,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Sequence, asn1.Types.Constructed, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.Sequence: 0x10>, typ=<Types.Constructed: 0x20>, cls=<Classes.Universal: 0x00>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -597,7 +730,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Set, asn1.Types.Constructed, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.Set: 0x11>, typ=<Types.Constructed: 0x20>, cls=<Classes.Universal: 0x00>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -610,7 +742,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (asn1.Numbers.Set, asn1.Types.Constructed, asn1.Classes.Universal)
-        assert str(tag) == "Tag(nr=<Numbers.Set: 0x11>, typ=<Types.Constructed: 0x20>, cls=<Classes.Universal: 0x00>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -623,7 +754,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (1, asn1.Types.Constructed, asn1.Classes.Context)
-        assert str(tag) == "Tag(nr=1, typ=<Types.Constructed: 0x20>, cls=<Classes.Context: 0x80>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -634,7 +764,6 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (1, asn1.Types.Constructed, asn1.Classes.Application)
-        assert str(tag) == "Tag(nr=1, typ=<Types.Constructed: 0x20>, cls=<Classes.Application: 0x40>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -645,17 +774,16 @@ class TestDecoder(object):
         dec.start(buf)
         tag = dec.peek()
         assert tag == (1, asn1.Types.Constructed, asn1.Classes.Private)
-        assert str(tag) == "Tag(nr=1, typ=<Types.Constructed: 0x20>, cls=<Classes.Private: 0xc0>)"
         dec.enter()
         tag, val = dec.read()
         assert val == 1
 
     def test_long_tag_id(self):
-        buf = b'\x3f\x83\xff\x7f\x03\x02\x01\x01'
+        buf = b'\x7f\x83\xff\x7f\x03\x02\x01\x01'
         dec = asn1.Decoder()
         dec.start(buf)
         tag = dec.peek()
-        assert tag == (0xffff, asn1.Types.Constructed, asn1.Classes.Universal)
+        assert tag == (0xffff, asn1.Types.Constructed, asn1.Classes.Application)
         dec.enter()
         tag, val = dec.read()
         assert val == 1
@@ -677,20 +805,25 @@ class TestDecoder(object):
         assert val == 2
         assert dec.eof()
 
-    def test_skip_primitive(self):
+    def test_primitives(self):
         buf = b'\x02\x01\x01\x02\x01\x02'
         dec = asn1.Decoder()
         dec.start(buf)
-        dec.read()
         tag, val = dec.read()
+        assert tag == (asn1.Numbers.Integer, asn1.Types.Primitive, asn1.Classes.Universal)
+        assert val == 1
+        tag, val = dec.read()
+        assert tag == (asn1.Numbers.Integer, asn1.Types.Primitive, asn1.Classes.Universal)
         assert val == 2
         assert dec.eof()
 
-    def test_skip_constructed(self):
+    def test_constructed(self):
         buf = b'\x30\x06\x02\x01\x01\x02\x01\x02\x02\x01\x03'
         dec = asn1.Decoder()
         dec.start(buf)
-        dec.read()
+        tag, val = dec.read()
+        assert tag == (asn1.Numbers.Sequence, asn1.Types.Constructed, asn1.Classes.Universal)
+        assert val == [1, 2]
         tag, val = dec.read()
         assert val == 3
         assert dec.eof()
