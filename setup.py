@@ -29,7 +29,7 @@ if version_info[0] < 3:
 
 setup(
     name='asn1',
-    version='2.8.0',
+    version='3.0.0',
     license='BSD',
     description='Python-ASN1 is a simple ASN.1 encoder and decoder for Python 2.7+ and 3.5+.',
     long_description='%s\n%s' % (
