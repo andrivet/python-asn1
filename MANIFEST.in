@@ -3,6 +3,7 @@ graft examples
 graft src
 graft ci
 graft tests
+graft stubs
 
 include .coveragerc
 include .cookiecutterrc

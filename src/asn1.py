@@ -725,16 +725,17 @@ class Decoder(object):
     def read(self, flags=ReadFlags.OnlyValue):  # type: (ReadFlags) -> Tuple[Union[Tag, None], Any]
         """
         This method decodes one ASN.1 tag from the input and returns it as a
-        ``(tag, value, unused)`` tuple. ``tag`` is a 3-tuple ``(nr, typ, cls)``,
+        ``(tag, value)`` tuple. ``tag`` is a 3-tuple ``(nr, typ, cls)``,
         while ``value`` is a Python object representing the ASN.1 value.
+        The number of unused bits can be requested in the ``flags`` parameter.
+        When ``ReadFlags.OnlyValue`` is specified, the method the tuple ``(tag, (value, unused))``.
         ``unused`` is the number of unused bits removed from the value.
-        The offset in the input is increased so that the next `Decoder.read()`
-        or `Decoder.read_with_unused()` call will return the next tag. In case
-        no more data is available from the input, this method returns ``None``
+        The offset in the input is increased so that the next `Decoder.read()` call will return the next tag.
+        In case no more data is available from the input, this method returns ``None``
         to signal end-of-file.
 
         Args:
-            flags (DecoderFlags): Return only the value or the value and the number of unused bits as a tuple.
+            flags (asn1.DecoderFlags): Return only the value or the value and the number of unused bits as a tuple.
 
         Returns:
             `Tag`, value: The current ASN.1 tag, its value and the

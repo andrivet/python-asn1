@@ -30,19 +30,13 @@ Null             0x05       None        None
 ObjectIdentifier 0x06       str
 Real             0x09       float       float
 Enumerated       0x0A       int
-UTCTime          0x17
-GeneralizedTime  0x18
-Date             0x1F
-TimeOfDay        0x20
-DateTime         0x21
-Duration         0x22
 ================ ========== =========== =============
 
 Because ASN.1 has more data types than Python, the situation arises that one Python
 type corresponds to multiple ASN.1 types. In this situation, the to be encoded
 ASN.1 type cannot be determined from the Python type. The solution
 implemented in Python-ASN1 is that the most frequently used type will be the
-implicit default. This is indicated in the `Encoding` column.
+implicit default. This is indicated in the ``Encoding`` column.
 If another type is desired than that must be specified
 explicitly through the API.
 
@@ -175,7 +169,7 @@ You can decode complex data structures. The decoder will automatically map ASN.1
 
 .. code-block:: python
 
-  import asn1
+    import asn1
 
     with open('example7.der', 'rb') as f:
         decoder = asn1.Decoder()
@@ -183,6 +177,24 @@ You can decode complex data structures. The decoder will automatically map ASN.1
         tag, value = decoder.read()
         print(tag)
         pprint.pprint(value)
+
+You can ask the decoder to return the number of unused bits when decoding a BitString:
+
+.. code-block:: python
+
+    import asn1
+
+    encoded = b'\x23\x0C\x03\x02\x00\x0B\x03\x02\x00\x0B\x03\x02\x04\x0F'
+    decoder = asn1.Decoder()
+    decoder.start(encoded)
+    tag, (value, unused) = decoder.read(asn1.ReadFlags.WithUnused)
+    print('Tag: ', tag)
+    print('Value: ', value)
+    print('Unused bits: ', unused)
+
+The flag ``ReadFlags.WithUnused`` can be used with any ASN.1 type. When used, the read method will return a tuple with the value and the number of unused bits.
+If the type is not a BitString, the number of unused bits is always 0.
+
 
 Constants
 ---------
@@ -242,12 +254,12 @@ and constructed) for ASN.1 data types. As above they can be used with the
 `Decoder.peek()` and
 `Decoder.read()`.
 
-================== ===========
-Constant           Value (hex)
-================== ============
-Types.Constructed  0x20
-Types.Primitive    0x00
-================== ===========
+=================== ===========
+Constant            Value (hex)
+=================== ===========
+Types.Constructed   0x20
+Types.Primitive     0x00
+=================== ===========
 
 Finally the constants below define the different ASN.1 classes. As above
 they can be used with the `Encoder.write()` and are

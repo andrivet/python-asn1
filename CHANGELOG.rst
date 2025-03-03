@@ -1,6 +1,16 @@
 Changelog
 =========
 
+3.0.0 (2025-03-03)
+------------------
+
+* Encoding and decoding of the ASN.1 REAL type
+* Support of indefinite lengths
+* Encoding and decoding of complex data (lists, sets, ...)
+* Add support for streams (file-like objects) when encoding and decoding
+* Optionally return the number of unused bits when decoding a BitString (see also #276)
+* #286 - Add ASN.1:2008 compliance test suite
+
 2.8.0 (2025-02-20)
 ------------------
 

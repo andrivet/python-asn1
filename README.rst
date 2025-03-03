@@ -38,10 +38,10 @@ Python-ASN1 is a simple ASN.1 encoder and decoder for Python 2.7 and 3.5+.
 Features
 ========
 
-- Support BER (parser) and DER (parser and generator) encoding (except indefinite lengths)
+- Support BER (parser) and DER (parser and generator) encoding (including indefinite lengths)
 - 100% python, compatible with version 2.7, 3.5 and higher
 - Can be integrated by just including a file into your project
-
+- Support most common ASN.1 types including REAL (encoding and decoding).
 
 Dependencies
 ==============
