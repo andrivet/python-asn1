@@ -194,12 +194,13 @@ class Encoder(object):
     """ASN.1 encoder. Uses DER encoding.
 
     Args:
-        definite (bool): If False (the default), encode constructed types
-            with indefinite length. If True, encode constructed types with
-            definite length; this may require more memory.
+        definite (bool): If True (the default), encode constructed types with
+            definite length. If False, encode constructed types with indefinite
+            length; this may be more efficient for encoding streams of large
+            objects. Note that DER does not permit indefinite-length encoding.
     """
 
-    def __init__(self, definite=False):  # type: (bool) -> None
+    def __init__(self, definite=True):  # type: (bool) -> None
         """Constructor."""
         self._stream = None                 # type: Union[io.RawIOBase, None]  # Output stream
         self._entered = None                # type Encoder # Sub-encoder for currently entered constructed value

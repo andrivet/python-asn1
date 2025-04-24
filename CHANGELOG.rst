@@ -5,6 +5,7 @@ Changelog
 ------------------
 
 * Option to select definite- or indefinite-length encoding
+* Made definite-length encoding the default again
 
 3.0.0 (2025-03-03)
 ------------------
