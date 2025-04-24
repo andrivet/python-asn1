@@ -240,6 +240,13 @@ class TestEncoder(object):
         res = enc.output()
         assert res == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
+    def test_write_sequence_nested(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.write([1, [b'foo', b'bar'], [[[[b'boo']]]]])
+        res = enc.output()
+        assert res == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
     def test_sequence_of(self):
         enc = asn1.Encoder()
         enc.start()
