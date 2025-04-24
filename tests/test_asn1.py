@@ -218,6 +218,28 @@ class TestEncoder(object):
         res = enc.output()
         assert res == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
+    def test_sequence_nested(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(1)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(b'foo')
+        enc.write(b'bar')
+        enc.leave()
+        enc.enter(asn1.Numbers.Sequence)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(b'boo')
+        enc.leave()
+        enc.leave()
+        enc.leave()
+        enc.leave()
+        enc.leave()
+        res = enc.output()
+        assert res == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
     def test_sequence_of(self):
         enc = asn1.Encoder()
         enc.start()
