@@ -216,8 +216,12 @@ class TestEncoder(object):
             enc.write(b'foo')
             enc.leave()
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\x30\x08\x02\x01\x01\x04\x03foo'
+        assert res_indefinite == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
     def test_sequence_nested(self):
         def write_into(enc):
@@ -239,15 +243,24 @@ class TestEncoder(object):
             enc.leave()
             enc.leave()
             return enc.output()
-        res = write_into(asn1.Encoder())
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\x30\x1c\x02\x01\x01\x30\x0a\x04\x03foo\x04\x03bar\x30\x0b\x30\x09\x30\x07\x30\x05\x04\x03boo'
+        assert res_indefinite == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
     def test_write_sequence_nested(self):
         def write_into(enc):
             enc.start()
             enc.write([1, [b'foo', b'bar'], [[[[b'boo']]]]])
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\x30\x1c\x02\x01\x01\x30\x0a\x04\x03foo\x04\x03bar\x30\x0b\x30\x09\x30\x07\x30\x05\x04\x03boo'
+        assert res_indefinite == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
     def test_sequence_of(self):
         def write_into(enc):
@@ -257,8 +270,12 @@ class TestEncoder(object):
             enc.write(2)
             enc.leave()
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\x30\x80\x02\x01\x01\x02\x01\x02\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\x30\x06\x02\x01\x01\x02\x01\x02'
+        assert res_indefinite == b'\x30\x80\x02\x01\x01\x02\x01\x02\x00\x00'
 
     def test_set(self):
         def write_into(enc):
@@ -268,8 +285,12 @@ class TestEncoder(object):
             enc.write(b'foo')
             enc.leave()
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\x31\x80\x02\x01\x01\x04\x03foo\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\x31\x08\x02\x01\x01\x04\x03foo'
+        assert res_indefinite == b'\x31\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
     def test_set_of(self):
         def write_into(enc):
@@ -279,8 +300,12 @@ class TestEncoder(object):
             enc.write(2)
             enc.leave()
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\x31\x80\x02\x01\x01\x02\x01\x02\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\x31\x06\x02\x01\x01\x02\x01\x02'
+        assert res_indefinite == b'\x31\x80\x02\x01\x01\x02\x01\x02\x00\x00'
 
     def test_context(self):
         def write_into(enc):
@@ -289,8 +314,12 @@ class TestEncoder(object):
             enc.write(1)
             enc.leave()
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\xa1\x80\x02\x01\x01\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\xa1\x03\x02\x01\x01'
+        assert res_indefinite == b'\xa1\x80\x02\x01\x01\x00\x00'
 
     def test_application(self):
         def write_into(enc):
@@ -299,8 +328,12 @@ class TestEncoder(object):
             enc.write(1)
             enc.leave()
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\x61\x80\x02\x01\x01\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\x61\x03\x02\x01\x01'
+        assert res_indefinite == b'\x61\x80\x02\x01\x01\x00\x00'
 
     def test_private(self):
         def write_into(enc):
@@ -309,8 +342,12 @@ class TestEncoder(object):
             enc.write(1)
             enc.leave()
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\xe1\x80\x02\x01\x01\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\xe1\x03\x02\x01\x01'
+        assert res_indefinite == b'\xe1\x80\x02\x01\x01\x00\x00'
 
     def test_long_tag_id(self):
         def write_into(enc):
@@ -319,8 +356,12 @@ class TestEncoder(object):
             enc.write(1)
             enc.leave()
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\xff\x83\xff\x7f\x80\x02\x01\x01\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\xff\x83\xff\x7f\x03\x02\x01\x01'
+        assert res_indefinite == b'\xff\x83\xff\x7f\x80\x02\x01\x01\x00\x00'
 
     def test_contextmanager_construct(self):
         def write_into(enc):
@@ -329,8 +370,12 @@ class TestEncoder(object):
                 enc.write(1)
                 enc.write(b'foo')
             return enc.output()
-        res = write_into(asn1.Encoder())
-        assert res == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
+        res_default = write_into(asn1.Encoder())
+        res_definite = write_into(asn1.Encoder(definite=True))
+        res_indefinite = write_into(asn1.Encoder(definite=False))
+        assert res_default == res_indefinite
+        assert res_definite == b'\x30\x08\x02\x01\x01\x04\x03foo'
+        assert res_indefinite == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
     def test_contextmanager_calls_enter(self):
         class MyTestEncoder(asn1.Encoder):

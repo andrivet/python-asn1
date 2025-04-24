@@ -1,6 +1,11 @@
 Changelog
 =========
 
+3.1.0 (unreleased)
+------------------
+
+* Option to select definite- or indefinite-length encoding
+
 3.0.0 (2025-03-03)
 ------------------
 

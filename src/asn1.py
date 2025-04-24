@@ -191,12 +191,19 @@ class Error(Exception):
 
 
 class Encoder(object):
-    """ASN.1 encoder. Uses DER encoding."""
+    """ASN.1 encoder. Uses DER encoding.
 
-    def __init__(self):  # type: () -> None
+    Args:
+        definite (bool): If False (the default), encode constructed types
+            with indefinite length. If True, encode constructed types with
+            definite length; this may require more memory.
+    """
+
+    def __init__(self, definite=False):  # type: (bool) -> None
         """Constructor."""
         self._stream = None                 # type: Union[io.RawIOBase, None]  # Output stream
-        self._enters = 0                    # type int # Number of enter calls without leave
+        self._entered = None                # type Encoder # Sub-encoder for currently entered constructed value
+        self._definite = definite           # type bool # If True, generate definite-length output
 
     def start(self, stream=None):    # type: (Union[io.RawIOBase, None]) -> None
         """
@@ -228,12 +235,19 @@ class Encoder(object):
         """
         if self._stream is None:
             raise Error('Encoder not initialized. Call start() first.')
-        if cls is None:
-            cls = Classes.Universal
-        self._check_type(nr, Types.Constructed, cls)
-        self._emit_tag(nr, Types.Constructed, cls)
-        self._emit_indefinite_length()
-        self._enters += 1
+        if self._entered is not None:
+            self._entered.enter(nr, cls)
+        else:
+            if cls is None:
+                cls = Classes.Universal
+            self._check_type(nr, Types.Constructed, cls)
+            self._emit_tag(nr, Types.Constructed, cls)
+            self._entered = Encoder(definite=self._definite)
+            if self._definite:
+                self._entered.start()
+            else:
+                self._emit_indefinite_length()
+                self._entered.start(stream=self._stream)
 
     def leave(self):  # type: () -> None
         """
@@ -242,10 +256,18 @@ class Encoder(object):
         """
         if self._stream is None:
             raise Error('Encoder not initialized. Call start() first.')
-        if self._enters <= 0:
+        if self._entered is None:
             raise Error('Call to leave() without a corresponding enter() call.')
-        self._emit_eoc()
-        self._enters -= 1
+        if self._entered._entered is not None:
+            self._entered.leave()
+        else:
+            if self._definite:
+                sub_bytes = self._entered.output()
+                self._emit_length(len(sub_bytes))
+                self._write_bytes(sub_bytes)
+            else:
+                self._emit_eoc()
+            self._entered = None
 
     @contextmanager
     def construct(self, nr, cls=None):  # type: (int, Union[int, None]) -> Generator[None, Any, None]
@@ -334,42 +356,45 @@ class Encoder(object):
         if cls != Classes.Universal and nr is None:
             raise Error('Specify a tag number (nr) when using classes Application, Context or Private')
 
-        # Constructed
-        if nr is None and not isinstance(value, str) and not isinstance(value, bytes) and is_iterable(value):
-            nr = Numbers.Sequence
-            if typ is None:
-                typ = Types.Constructed
-        # Primitive
-        elif nr is None:
-            if isinstance(value, bool):
-                nr = Numbers.Boolean
-            elif isinstance(value, int):
-                nr = Numbers.Integer
-            elif isinstance(value, float):
-                nr = Numbers.Real
-            elif isinstance(value, str):
-                nr = Numbers.PrintableString
-            elif value is None:
-                nr = Numbers.Null
-            else:
-                nr = Numbers.OctetString
+        if self._entered is not None:
+            self._entered.write(value, nr, typ, cls)
+
+        else:
+            # Constructed
+            if nr is None and not isinstance(value, str) and not isinstance(value, bytes) and is_iterable(value):
+                nr = Numbers.Sequence
+                if typ is None:
+                    typ = Types.Constructed
+            # Primitive
+            elif nr is None:
+                if isinstance(value, bool):
+                    nr = Numbers.Boolean
+                elif isinstance(value, int):
+                    nr = Numbers.Integer
+                elif isinstance(value, float):
+                    nr = Numbers.Real
+                elif isinstance(value, str):
+                    nr = Numbers.PrintableString
+                elif value is None:
+                    nr = Numbers.Null
+                else:
+                    nr = Numbers.OctetString
+
+                if typ is None:
+                    typ = Types.Primitive
 
             if typ is None:
                 typ = Types.Primitive
 
-        if typ is None:
-            typ = Types.Primitive
+            self._check_type(nr, typ, cls)
 
-        self._check_type(nr, typ, cls)
-
-        if typ == Types.Primitive:
-            encoded = self._encode_value(cls, nr, value)
-            self._emit_tag(nr, typ, cls)
-            self._emit_length(len(encoded))
-            self._write_bytes(encoded)
-        else:
-            self._emit_tag(nr, typ, cls)
-            self._emit_sequence(value)
+            if typ == Types.Primitive:
+                encoded = self._encode_value(cls, nr, value)
+                self._emit_tag(nr, typ, cls)
+                self._emit_length(len(encoded))
+                self._write_bytes(encoded)
+            else:
+                self._emit_sequence(nr, cls, value)
 
     def output(self):  # type: () -> bytes
         """
@@ -465,9 +490,13 @@ class Encoder(object):
             self._write_bytes(bytes([val]))
 
     def _emit_indefinite_length(self):  # type: () -> None
+        if self._definite:
+            raise Error('Attempted to emit indefinite length while in definite-length mode')
         self._write_bytes(b'\x80')
 
     def _emit_eoc(self):  # type: () -> None
+        if self._definite:
+            raise Error('Attempted to emit end-of-contents tag while in definite-length mode')
         self._write_bytes(b'\x00\x00')
 
     def _write_bytes(self, s):  # type: (bytes) -> None
@@ -633,14 +662,14 @@ class Encoder(object):
         result.reverse()
         return bytes(result)
 
-    def _emit_sequence(self, value):  # type: (List) -> bytes
+    def _emit_sequence(self, nr, cls, value):  # type: (int, int, List) -> bytes
         if not is_iterable(value):
             raise Error('value must be an iterable')
 
-        self._emit_indefinite_length()
+        self.enter(nr, cls)
         for item in iter(value):
             self.write(item)
-        self._emit_eoc()
+        self.leave()
 
 
 class Decoder(object):
