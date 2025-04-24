@@ -209,119 +209,127 @@ class TestEncoder(object):
         assert res == b'\x0a\x01\x01'
 
     def test_sequence(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.enter(asn1.Numbers.Sequence)
-        enc.write(1)
-        enc.write(b'foo')
-        enc.leave()
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            enc.enter(asn1.Numbers.Sequence)
+            enc.write(1)
+            enc.write(b'foo')
+            enc.leave()
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
     def test_sequence_nested(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.enter(asn1.Numbers.Sequence)
-        enc.write(1)
-        enc.enter(asn1.Numbers.Sequence)
-        enc.write(b'foo')
-        enc.write(b'bar')
-        enc.leave()
-        enc.enter(asn1.Numbers.Sequence)
-        enc.enter(asn1.Numbers.Sequence)
-        enc.enter(asn1.Numbers.Sequence)
-        enc.enter(asn1.Numbers.Sequence)
-        enc.write(b'boo')
-        enc.leave()
-        enc.leave()
-        enc.leave()
-        enc.leave()
-        enc.leave()
-        res = enc.output()
-        assert res == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        def write_into(enc):
+            enc.start()
+            enc.enter(asn1.Numbers.Sequence)
+            enc.write(1)
+            enc.enter(asn1.Numbers.Sequence)
+            enc.write(b'foo')
+            enc.write(b'bar')
+            enc.leave()
+            enc.enter(asn1.Numbers.Sequence)
+            enc.enter(asn1.Numbers.Sequence)
+            enc.enter(asn1.Numbers.Sequence)
+            enc.enter(asn1.Numbers.Sequence)
+            enc.write(b'boo')
+            enc.leave()
+            enc.leave()
+            enc.leave()
+            enc.leave()
+            enc.leave()
+            return enc.output()
+        res = write_into(asn1.Encoder())
 
     def test_write_sequence_nested(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.write([1, [b'foo', b'bar'], [[[[b'boo']]]]])
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            enc.write([1, [b'foo', b'bar'], [[[[b'boo']]]]])
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
     def test_sequence_of(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.enter(asn1.Numbers.Sequence)
-        enc.write(1)
-        enc.write(2)
-        enc.leave()
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            enc.enter(asn1.Numbers.Sequence)
+            enc.write(1)
+            enc.write(2)
+            enc.leave()
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\x30\x80\x02\x01\x01\x02\x01\x02\x00\x00'
 
     def test_set(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.enter(asn1.Numbers.Set)
-        enc.write(1)
-        enc.write(b'foo')
-        enc.leave()
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            enc.enter(asn1.Numbers.Set)
+            enc.write(1)
+            enc.write(b'foo')
+            enc.leave()
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\x31\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
     def test_set_of(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.enter(asn1.Numbers.Set)
-        enc.write(1)
-        enc.write(2)
-        enc.leave()
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            enc.enter(asn1.Numbers.Set)
+            enc.write(1)
+            enc.write(2)
+            enc.leave()
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\x31\x80\x02\x01\x01\x02\x01\x02\x00\x00'
 
     def test_context(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.enter(1, asn1.Classes.Context)
-        enc.write(1)
-        enc.leave()
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            enc.enter(1, asn1.Classes.Context)
+            enc.write(1)
+            enc.leave()
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\xa1\x80\x02\x01\x01\x00\x00'
 
     def test_application(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.enter(1, asn1.Classes.Application)
-        enc.write(1)
-        enc.leave()
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            enc.enter(1, asn1.Classes.Application)
+            enc.write(1)
+            enc.leave()
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\x61\x80\x02\x01\x01\x00\x00'
 
     def test_private(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.enter(1, asn1.Classes.Private)
-        enc.write(1)
-        enc.leave()
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            enc.enter(1, asn1.Classes.Private)
+            enc.write(1)
+            enc.leave()
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\xe1\x80\x02\x01\x01\x00\x00'
 
     def test_long_tag_id(self):
-        enc = asn1.Encoder()
-        enc.start()
-        enc.enter(0xffff, asn1.Classes.Private)
-        enc.write(1)
-        enc.leave()
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            enc.enter(0xffff, asn1.Classes.Private)
+            enc.write(1)
+            enc.leave()
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\xff\x83\xff\x7f\x80\x02\x01\x01\x00\x00'
 
     def test_contextmanager_construct(self):
-        enc = asn1.Encoder()
-        enc.start()
-
-        with enc.construct(asn1.Numbers.Sequence):
-            enc.write(1)
-            enc.write(b'foo')
-
-        res = enc.output()
+        def write_into(enc):
+            enc.start()
+            with enc.construct(asn1.Numbers.Sequence):
+                enc.write(1)
+                enc.write(b'foo')
+            return enc.output()
+        res = write_into(asn1.Encoder())
         assert res == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
     def test_contextmanager_calls_enter(self):
