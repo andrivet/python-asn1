@@ -4,41 +4,43 @@
 # made available under the MIT license. Consult the file "LICENSE" that
 # is distributed together with this file for the exact licensing terms.
 #
-# Python-ASN1 is copyright (c) 2007-2016 by the Python-ASN1 authors. See
-# the file "AUTHORS" for a complete overview.
+# Python-ASN1 is copyright (c) 2007-2025 by the Python-ASN1 authors. See the
+# file "AUTHORS" for a complete overview.
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-from builtins import open, str
+from io import open  # For Python 2 and 3 compatibility
+
 import asn1
-import binascii
-import pprint
 
 
-def example1():
+def test_example1():
     """Encoding an object identifier."""
-    print('Example 1')
     encoder = asn1.Encoder()
     encoder.start()
     encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
-    print(str(binascii.hexlify(encoder.output(), ' ', 1).upper(), encoding='ascii'))
-    print()
+    assert encoder.output() == b'\x06\x02\x2a\x03'
 
 
-def example2():
+def test_example2(tmp_path):
     """Encoding an object identifier directly to a file."""
-    print('Example 2')
-    with open('example2.der', 'wb') as f:
+    with open(str(tmp_path / 'example2.der'), 'wb') as f:
         encoder = asn1.Encoder()
         encoder.start(f, asn1.Encoding.DER)  # CER is the default when using a stream
         encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
         encoder.output()  # Do nt forget to call output() to flush the buffer
 
+    with open(str(tmp_path / 'example2.der'), 'rb') as f:
+        data = f.read()
+        assert data == b'\x06\x02\x2a\x03'
 
-def example3():
+
+def test_example3(tmp_path):
     """Encoding of complex data."""
-    print('Example 3')
-    with open('example3.der', 'wb') as f:
+    with open(str(tmp_path / 'example3.der'), 'wb') as f:
         encoder = asn1.Encoder()
         encoder.start(f, asn1.Encoding.DER)  # CER is the default when using a stream
         encoder.write(['test1', 'test2', [
@@ -46,38 +48,46 @@ def example3():
             0.125,
             b'\x01\x02\x03'
         ]])
-        encoder.output()  # Do nt forget to call output() to flush the buffer
-    print()
+        encoder.output()
+
+    with open(str(tmp_path / 'example3.der'), 'rb') as f:
+        data = f.read()
+        assert data == b'\x30\x1d\x13\x05test1\x13\x05test20\x0D\x02\x01\x01\t\x03\x80\xfd\x01\x04\x03\x01\x02\x03'
 
 
-def example4():
+def test_example4(tmp_path):
     """Decoding from a file."""
-    print('Example 4')
-    with open('example3.der', 'rb') as f:
+    with open(str(tmp_path / 'example4.der'), 'wb') as f:
+        encoder = asn1.Encoder()
+        encoder.start(f, asn1.Encoding.DER)
+        encoder.write(['test1', 'test2', [
+            1,
+            0.125,
+            b'\x01\x02\x03'
+        ]])
+        encoder.output()
+
+    with open(str(tmp_path / 'example4.der'), 'rb') as f:
         decoder = asn1.Decoder()
         decoder.start(f)
         tag, value = decoder.read()
-        print(tag)
-        print(value)
-    print()
+        assert tag == (asn1.Numbers.Sequence, asn1.Types.Constructed, asn1.Classes.Universal)
+        assert value == ['test1', 'test2', [1, 0.125, b'\x01\x02\x03']]
 
 
-def example5():
+def test_example5():
     """Decoding of a bit string with unused bits."""
-    print('Example 5')
     encoded = b'\x23\x0C\x03\x02\x00\x0B\x03\x02\x00\x0B\x03\x02\x04\x0F'
     decoder = asn1.Decoder()
     decoder.start(encoded)
     tag, (val, unused) = decoder.read(asn1.ReadFlags.WithUnused)
-    print('Tag:', tag)
-    print('Value:', val)
-    print('Unused bits:', unused)
-    print()
+    assert tag == (asn1.Numbers.BitString, asn1.Types.Constructed, asn1.Classes.Universal)
+    assert val == b'\x00\xb0\xb0'
+    assert unused == 4
 
 
-def example6():
+def test_example6():
     """Encoding of sequences."""
-    print('Example 6')
     encoder = asn1.Encoder()
     encoder.start()
     encoder.enter(asn1.Numbers.Sequence)
@@ -89,25 +99,21 @@ def example6():
     encoder.write(b'\x01\x02\x03', asn1.Numbers.OctetString)
     encoder.leave()
     encoder.leave()
-    print(str(binascii.hexlify(encoder.output(), ' ', 1).upper(), encoding='ascii'))
-    print()
+    assert encoder.output() == b'\x30\x1d\x13\x05test1\x13\x05test20\r\x02\x01\x01\t\x03\x80\xfd\x01\x04\x03\x01\x02\x03'
 
 
-def example7():
+def test_example7():
     """Decoding of sequences."""
-    print('Example 7')
     encoded = b'\x30\x80\x13\x05\x74\x65\x73\x74\x31\x13\x05\x74\x65\x73\x74\x32\x30\x80\x02\x01\x01\x09\x03\x80\xFD\x01\x04\x03\x01\x02\x03\x00\x00\x00\x00'
     decoder = asn1.Decoder()
     decoder.start(encoded)
     tag, value = decoder.read()
-    print(tag)
-    pprint.pprint(value)
-    print()
+    assert tag == (asn1.Numbers.Sequence, asn1.Types.Constructed, asn1.Classes.Universal)
+    assert value == ['test1', 'test2', [1, 0.125, b'\x01\x02\x03']]
 
 
-def example8():
+def test_example8():
     """Decoding of a complex data."""
-    print('Example 8')
     encoded = (b'\x30\x82\x04\x0e\x30\x82\x03\x77\xa0\x03\x02\x01\x02\x02\x02\x15'
                b'\x30\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x05\x05\x00'
                b'\x30\x81\xbb\x31\x0b\x30\x09\x06\x03\x55\x04\x06\x13\x02\x2d\x2d'
@@ -178,36 +184,54 @@ def example8():
     decoder = asn1.Decoder()
     decoder.start(encoded)
     tag, value = decoder.read()
-    print(tag)
-    pprint.pprint(value)
-    print()
+    assert tag == (asn1.Numbers.Sequence, asn1.Types.Constructed, asn1.Classes.Universal)
+    assert value == [
+        [
+            [2],
+            5424,
+            ['1.2.840.113549.1.1.5', None],
+            [
+                [['2.5.4.6', '--']],
+                [['2.5.4.8', 'SomeState']],
+                [['2.5.4.7', 'SomeCity']],
+                [['2.5.4.10', 'SomeOrganization']],
+                [['2.5.4.11', 'SomeOrganizationalUnit']],
+                [['2.5.4.3', 'localhost.localdomain']],
+                [['1.2.840.113549.1.9.1', 'root@localhost.localdomain']]
+            ],
+            ['080205092331Z', '090204092331Z'],
+            [
+                [['2.5.4.6', '--']],
+                [['2.5.4.8', 'SomeState']],
+                [['2.5.4.7', 'SomeCity']],
+                [['2.5.4.10', 'SomeOrganization']],
+                [['2.5.4.11', 'SomeOrganizationalUnit']],
+                [['2.5.4.3', 'localhost.localdomain']],
+                [['1.2.840.113549.1.9.1', 'root@localhost.localdomain']]],
+                [['1.2.840.113549.1.1.1', None], b'0\x81\x89\x02\x81\x81\x00\xd5\x18\xcd@\x91\x90\'Zw7"\xca\xba\x05\xdf\x131\xe8tCO~\x08\xa3\xa5v\xcd{\xdd7\xd0\x7f\x12\x9e\x81s\x87Uf\r\xdah\xee8\xeb4\xe2\xf4\xeb\x95\xd5\xe0\xde\xef\x08W\xf9\x03\x14i\xa8o|\xa4\xfadQ96\xd5\t7a\x83\x13\x8cA%\xba`\x91 \x86[`\xb5\xe2\x83ef\xad\x06\xb3Eq\x83g\xd2\xe5_@BK7\xf8\x87\xd0\tI\xb8\xad4v\xa3\x1b\xbf\xc1\x0f\xb7\xfbC\xbeb3\x02\x02\x10a\x02\x03\x01\x00\x01'],
+                [
+                    [
+                        ['2.5.29.14', b'\x04\x14\nK\xfa\x87T\x17~0\xb4!qVQ\x0f\xd2\x91\xc30\x026'],
+                        ['2.5.29.35', b"0\x81\xde\x80\x14\nK\xfa\x87T\x17~0\xb4!qVQ\x0f\xd2\x91\xc30\x026\xa1\x81\xc1\xa4\x81\xbe0\x81\xbb1\x0b0\t\x06\x03U\x04\x06\x13\x02--1\x120\x10\x06\x03U\x04\x08\x13\tSomeState1\x110\x0f\x06\x03U\x04\x07\x13\x08SomeCity1\x190\x17\x06\x03U\x04\n\x13\x10SomeOrganization1\x1f0\x1d\x06\x03U\x04\x0b\x13\x16SomeOrganizationalUnit1\x1e0\x1c\x06\x03U\x04\x03\x13\x15localhost.localdomain1)0'\x06\t*\x86H\x86\xf7\r\x01\t\x01\x16\x1aroot@localhost.localdomain\x82\x02\x150"],
+                        ['2.5.29.19', b'0\x03\x01\x01\xff']
+                    ]
+                ]
+        ],
+        ['1.2.840.113549.1.1.5', None],
+        b'N\x12FX\xa3W\xc5\x9a\xab\xfa2\xf5\xde\x87\xfbw\xa8y8\x1dO\xd3|:\x16`\x82}\x92\xa1X\xd2S{\x11\x90\xecm\xb0\xb0X\xee3\xb4{\x1d\xb8\x95\xd8\x98\xc3\x10\x81\x83\x08F\xe8\x9a\xb9l\xbf\x8f\x9es\xf7a\x89\xc4j\x1b\xc1\x98\xc6\xab\xfc\x91\xb6Y\xb8\xa5\x05\x91*\xbb\xc40\x16S\xbf\x1a\xfe/\x01%\xae\xef\xc7\xb9\xfa\xa5S\xf8\xd9\xf5\x8f\xae\x91\xeaW(\xfa\xdf4\x03)\xe8\x97\xee.\x9e\x8abE\xc7\xfcX\xb4Z'
+    ]
 
 
-def example9():
+def test_example9(tmp_path):
     """Using CER encoding with a stream (file)."""
-    with open('exmple9.cer', 'wb') as f:
+    with open(str(tmp_path / 'exmple9.cer'), 'wb') as f:
         encoder = asn1.Encoder()
         encoder.start(f)
-        encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
-        # No need to call encoder.output() with CER encoding and a stream
 
 
-def example10():
+def test_example10(tmp_path):
     """Using DER encoding with a stream (file)."""
-    with open('exmple10.der', 'wb') as f:
+    with open(str(tmp_path / 'exmple10.der'), 'wb') as f:
         encoder = asn1.Encoder()
         encoder.start(f, asn1.Encoding.DER)
-        encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
-        encoder.output()  # Do nt forget to call output() to flush the buffer
-
-
-example1()
-example2()
-example3()
-example4()
-example5()
-example6()
-example7()
-example8()
-example9()
-example10()
+        encoder.output()

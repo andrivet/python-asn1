@@ -28,7 +28,7 @@ from contextlib import contextmanager
 from enum import IntEnum
 from functools import reduce
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 from typing import Any  # noqa: F401
 from typing import Generator  # noqa: F401
@@ -40,6 +40,7 @@ INDEFINITE_FORM = -1  # Length that represents an indefinite form
 
 
 class Asn1Enum(IntEnum):
+    """An enumeration class with a textual representation."""
     def __repr__(self):
         return '<{cls}.{name}: 0x{value:02x}>'.format(
             cls=type(self).__name__,
@@ -49,6 +50,7 @@ class Asn1Enum(IntEnum):
 
 
 class Numbers(Asn1Enum):
+    """ASN.1 tag numbers."""
     Boolean = 0x01
     Integer = 0x02
     BitString = 0x03
@@ -87,18 +89,26 @@ class Numbers(Asn1Enum):
 
 
 class Types(Asn1Enum):
+    """ASN.1 tag types."""
     Constructed = 0x20
     Primitive = 0x00
 
 
 class Classes(Asn1Enum):
+    """ASN.1 tag classes."""
     Universal = 0x00
     Application = 0x40
     Context = 0x80
     Private = 0xc0
 
 
+class Encoding(Asn1Enum):
+    DER = 1  # Distinguished Encoding Rules
+    CER = 2  # Canonical Encoding Rules
+
+
 class ReadFlags(IntEnum):
+    """How to read values that may have unused bits."""
     OnlyValue = 0x00
     WithUnused = 0x01
 
@@ -195,19 +205,48 @@ class Encoder(object):
 
     def __init__(self):  # type: () -> None
         """Constructor."""
-        self._stream = None                 # type: Union[io.RawIOBase, None]  # Output stream
-        self._enters = 0                    # type int # Number of enter calls without leave
+        self._stream = None     # type: Union[io.RawIOBase, io.BufferedWriter, None]  # Output stream
+        self._encoding = None   # type: Union[Encoding, None] # Encoding type (DER or CER)
+        self._stack = None      # type: List[List[bytes]] | None  # Stack of encoded data
 
-    def start(self, stream=None):    # type: (Union[io.RawIOBase, None]) -> None
+    def start(self, stream=None, encoding=None):
+        # type: (Union[io.RawIOBase, io.BufferedWriter, Encoding, None], Union[Encoding, None]) -> None
         """
         This method instructs the encoder to start encoding a new ASN.1
-        output. This method may be called at any time to reset the encoder,
-        and resets the current output (if any).
+        output. This method may be called at any time to reset the encoder
+        and reset the current output (if any).
 
         Args:
-            stream (io.RawIOBase or None): The output stream.
+            stream (io.RawIOBase or Encoding or None): The output stream or the encoding with no stream.
+            encoding (Encoding or None): The encoding (DER or CER) to use.
         """
-        self._stream = io.BytesIO() if stream is None else stream  # type: ignore
+        # stream is an Encoding, encoding is an Encoding: this not allowed
+        if isinstance(stream, Encoding) and isinstance(encoding, Encoding):
+            raise Error('Do not specify two encodings. Use one of them.')
+
+        # stream is an Encoding, (encoding is None): fallback to stream=None, encoding
+        if isinstance(stream, Encoding):
+            encoding = stream
+            stream = None
+
+        # stream is None, encoding is an Encoding: in case of CER, use BytesIO, otherwise use no stream
+        if stream is None and isinstance(encoding, Encoding):
+            if encoding == Encoding.CER:
+                stream = io.BytesIO()  # type: ignore
+
+        # stream is None, (encoding is None): fallback to DER, no stream
+        if stream is None:
+            encoding = Encoding.DER
+
+        # stream is a stream, encoding is None: use CER
+        if stream is not None and encoding is None:
+            encoding = Encoding.CER
+
+        # stream is a stream, encoding is an Encoding: nothing to do
+
+        self._stream = stream
+        self._encoding = encoding
+        self._stack = [[]]  # Does not yet have data
 
     def enter(self, nr, cls=None):  # type: (int, Union[int, None]) -> None
         """
@@ -226,26 +265,33 @@ class Encoder(object):
         Raises:
             `Error`
         """
-        if self._stream is None:
+        if self._stack is None:
             raise Error('Encoder not initialized. Call start() first.')
         if cls is None:
             cls = Classes.Universal
         self._check_type(nr, Types.Constructed, cls)
         self._emit_tag(nr, Types.Constructed, cls)
-        self._emit_indefinite_length()
-        self._enters += 1
+        if self._encoding == Encoding.CER:
+            self._emit_indefinite_length()
+        self._stack.append([])  # Add a new item on the stack, it does not yet have data
 
     def leave(self):  # type: () -> None
         """
         This method completes the construction of a constructed type and
         writes the encoded representation to the output stream.
         """
-        if self._stream is None:
+        if self._stack is None:
             raise Error('Encoder not initialized. Call start() first.')
-        if self._enters <= 0:
+        if len(self._stack) <= 1:
             raise Error('Call to leave() without a corresponding enter() call.')
-        self._emit_eoc()
-        self._enters -= 1
+
+        if self._encoding is Encoding.DER:
+            value = b''.join(self._stack[-1])  # Top of the stack
+            del self._stack[-1]  # Remove top of the stack
+            self._emit_length(len(value))
+            self._emit(value)
+        else:
+            self._emit_eoc()
 
     @contextmanager
     def construct(self, nr, cls=None):  # type: (int, Union[int, None]) -> Generator[None, Any, None]
@@ -325,7 +371,7 @@ class Encoder(object):
         Raises:
             `Error`
         """
-        if self._stream is None:
+        if self._stack is None:
             raise Error('Encoder not initialized. Call start() first.')
 
         if cls is None:
@@ -366,17 +412,19 @@ class Encoder(object):
             encoded = self._encode_value(cls, nr, value)
             self._emit_tag(nr, typ, cls)
             self._emit_length(len(encoded))
-            self._write_bytes(encoded)
+            self._emit(encoded)
         else:
-            self._emit_tag(nr, typ, cls)
-            self._emit_sequence(value)
+            self._emit_sequence(nr, cls, value)
 
     def output(self):  # type: () -> bytes
         """
         This method returns the encoded ASN.1 data as plain Python ``bytes``.
-        This method can be called multiple times, also during encoding.
-        In the latter case the data that has been encoded so far is
-        returned.
+        With DER encoding and a stream, this method has to be called when all data are encoded.
+        Otherwise, the stream will contain partial data.
+        With DER encoding and no stream, this method has to be called multiple times. The data that
+        has been encoded so far is returned.
+        When using CER encoding, you do not need to call it at all. With CER, this method can only
+        be called when using a BytesIO stream or no stream.
 
         Note:
             It is an error to call this method if the encoder is still
@@ -384,13 +432,25 @@ class Encoder(object):
             called more times that `Encoder.leave()`.
 
         Returns:
-            bytes: The DER encoded ASN.1 data.
+            bytes: The DER or CER encoded ASN.1 data.
 
         Raises:
             `Error`
         """
-        if self._stream is None:
-            raise Error('Encoder not initialized. Call start() first.')
+        if self._stack is None:
+            raise Error('Encoder not initialized. start() was not called or this method was already called.')
+
+        if self._encoding == Encoding.DER:
+            if len(self._stack) != 1:
+                raise Error('Some constructed types have not been closed. Call leave() first.')
+            data = b''.join(self._stack[0])
+            if self._stream is not None:
+                self._stream.write(data)
+                self._stream.flush()
+                self._stream = None
+            return data
+
+        # CER
         if not isinstance(self._stream, io.BytesIO):
             raise Error('This method can only be called if the stream is io.BytesIO.')
         return self._stream.getvalue()
@@ -421,12 +481,12 @@ class Encoder(object):
     def _emit_tag_short(self, nr, typ, cls):  # type: (int, int, int) -> None
         """Emit a short (< 31 bytes) tag."""
         assert nr < 31
-        self._write_bytes(bytes([nr | typ | cls]))
+        self._emit(bytes([nr | typ | cls]))
 
     def _emit_tag_long(self, nr, typ, cls):  # type: (int, int, int) -> None
         """Emit a long (>= 31 bytes) tag."""
         head = bytes([typ | cls | 0x1f])
-        self._write_bytes(head)
+        self._emit(head)
         values = [(nr & 0x7f)]
         nr >>= 7
         while nr:
@@ -434,7 +494,7 @@ class Encoder(object):
             nr >>= 7
         values.reverse()
         for val in values:
-            self._write_bytes(bytes([val]))
+            self._emit(bytes([val]))
 
     def _emit_length(self, length):  # type: (int) -> None
         """Emit length bytes."""
@@ -448,7 +508,7 @@ class Encoder(object):
     def _emit_length_short(self, length):  # type: (int) -> None
         """Emit the short length form (< 128 octets)."""
         assert length < 128
-        self._write_bytes(bytes([length]))
+        self._emit(bytes([length]))
 
     def _emit_length_long(self, length):  # type: (int) -> None
         """Emit the long length form (>= 128 octets)."""
@@ -460,15 +520,24 @@ class Encoder(object):
         # really for correctness as this should not happen anytime soon
         assert len(values) < 127
         head = bytes([0x80 | len(values)])
-        self._write_bytes(head)
+        self._emit(head)
         for val in values:
-            self._write_bytes(bytes([val]))
+            self._emit(bytes([val]))
+
+    def _emit(self, s):  # type: (bytes) -> None
+        """Emit raw bytes."""
+        if self._stack is None:
+            raise Error('Encoder not initialized. Call start() first.')
+        if self._encoding == Encoding.DER:
+            self._stack[-1].append(s)
+        else:
+            self._write_bytes(s)
 
     def _emit_indefinite_length(self):  # type: () -> None
-        self._write_bytes(b'\x80')
+        self._emit(b'\x80')
 
     def _emit_eoc(self):  # type: () -> None
-        self._write_bytes(b'\x00\x00')
+        self._emit(b'\x00\x00')
 
     def _write_bytes(self, s):  # type: (bytes) -> None
         """Emit raw bytes."""
@@ -633,14 +702,14 @@ class Encoder(object):
         result.reverse()
         return bytes(result)
 
-    def _emit_sequence(self, value):  # type: (List) -> bytes
+    def _emit_sequence(self, nr, cls, value):  # type: (int, int, List) -> None
         if not is_iterable(value):
             raise Error('value must be an iterable')
 
-        self._emit_indefinite_length()
+        self.enter(nr, cls)
         for item in iter(value):
             self.write(item)
-        self._emit_eoc()
+        self.leave()
 
 
 class Decoder(object):
@@ -648,14 +717,14 @@ class Decoder(object):
 
     def __init__(self):  # type: () -> None
         """Constructor."""
-        self._stream = None     # type: Union[io.RawIOBase, io.BufferedIOBase, None]  # Input stream
+        self._stream = None     # type: Union[io.RawIOBase, io.BufferedIOBase, None] # Input stream
         self._byte = bytes()    # type: bytes # Cached byte (to be able to implement eof)
         self._position = 0      # type: int # Due to caching, tell does not give the right position
         self._tag = None        # type: Union[Tag, None] # Cached Tag (to be able to implement peek)
         self._levels = 0        # type: int # Number of recursive calls
         self._ends = []         # type: List[int] # End of the current element (or INDEFINITE_FORM) for enter / leave
 
-    def start(self, stream):  # type: (Union[io.RawIOBase, bytes]) -> None
+    def start(self, stream):  # type: (Union[io.RawIOBase, io.BufferedIOBase, bytes]) -> None
         """
         This method instructs the decoder to start decoding an ASN.1 input.
         This method may be called at any time to start a new decoding job.
@@ -676,7 +745,7 @@ class Decoder(object):
             `Error`
         """
         if not isinstance(stream, bytes) and not isinstance(stream, io.RawIOBase) and not isinstance(stream, io.BufferedIOBase):
-            raise Error('Expecting bytes or a subclass of io.RawIOBase.')
+            raise Error('Expecting bytes or a subclass of io.RawIOBase. Get {} instead.'.format(type(stream)))
 
         self._stream = io.BytesIO(stream) if isinstance(stream, bytes) else stream  # type: ignore
         self._tag = None

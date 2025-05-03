@@ -141,10 +141,52 @@ If you want to precisely specify the ASN.1 type, you have to use the `Encoder.en
 
 This also allows to encode data progressively, without having to keep everything in memory.
 
+DER and CER
+-----------
+
+The encoder uses DER (Distinguished Encoding Rules) encoding by default. If you want to use CER (Canonical Encoding Rules) encoding,
+you can do so by calling the `Encoder.start()` method with a stream as argument:
+
+.. code-block:: python
+
+        stream = open('output.cer', 'wb')
+        encoder = asn1.Encoder()
+        encoder.start(stream)
+
+You can explicitly specify the CER encoding without using a stream:
+
+.. code-block:: python
+
+        encoder = asn1.Encoder()
+        encoder.start(Encoder.CER)
+
+You can explicitly specify the DER encoding when using a stream:
+
+.. code-block:: python
+
+        stream = open('output.cer', 'wb')
+        encoder = asn1.Encoder()
+        encoder.start(stream, Encoder.DER)
+
+DER has the advantage to be predicatable: there is one and only one way to encode a message using DER. DER is
+commonly used in security-related applications such as X.509 digital certificates. DER uses definite lengths for all
+encoded messages. This means that the length of the encoded message is known in advance. This is useful for encoding
+messages that are fixed in size or that do not change in size over time. The disadvantage of DER is that the encoded
+binary data are kept in memory until the encoding is finished. This can be a problem for very large messages.
+
+CER is similar to DER, but it uses indefinite lengths. This means that the length of the encoded message is not
+known in advance. This is useful for encoding messages that may be very large or that may change in size over time.
+The advantage of CER is that the encoded binary data are not kept in memory until the encoding is finished. This
+means that the encoder can start writing the encoded message to a file or a stream as soon as it is available.
+
+IMPORTANT: There was a mistake in version 3.0.0 of Python-ASN1 where the encoder used CER encoding by default contrary to the
+previous versions that were using DER. This was fixed in version 3.0.1: CER is the default encoding when using a stream.
+Otherwise, DER is the default encoding.
+
 Decoding
 --------
 
-If you want to decode ASN.1 from DER or BER encoded bytes, use code such as:
+If you want to decode ASN.1 from BER (DER, CER, ...) encoded bytes, use code such as:
 
 .. code-block:: python
 
@@ -201,8 +243,7 @@ Constants
 
 A few constants are defined in the `asn1` module. The
 constants immediately below correspond to ASN.1 tag numbers.
-They can be used as
-the ``nr`` parameter of the
+They can be used as the ``nr`` parameter of the
 `Encoder.write()` method, and are returned as the
 first part of a ``(nr, typ, cls)`` tuple as returned by
 `Decoder.peek()` and

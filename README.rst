@@ -6,8 +6,8 @@
     :target: https://github.com/andrivet/python-asn1
     :alt: GitHub Actions
 
-.. |docs| image:: https://readthedocs.org/projects/python-asn1/badge/?style=flat
-    :target: https://readthedocs.org/projects/python-asn1
+.. |docs| image:: https://app.readthedocs.org/projects/python-asn1/badge/?style=flat
+    :target: https://python-asn1.readthedocs.io/en/latest/
     :alt: Documentation Status
 
 .. |version| image:: https://img.shields.io/pypi/v/asn1.svg?style=flat

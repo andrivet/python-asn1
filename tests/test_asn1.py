@@ -208,9 +208,19 @@ class TestEncoder(object):
         res = enc.output()
         assert res == b'\x0a\x01\x01'
 
-    def test_sequence(self):
+    def test_sequence_der(self):
         enc = asn1.Encoder()
         enc.start()
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(1)
+        enc.write(b'foo')
+        enc.leave()
+        res = enc.output()
+        assert res == b'\x30\x08\x02\x01\x01\x04\x03foo'
+
+    def test_sequence_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
         enc.enter(asn1.Numbers.Sequence)
         enc.write(1)
         enc.write(b'foo')
@@ -218,7 +228,7 @@ class TestEncoder(object):
         res = enc.output()
         assert res == b'\x30\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
-    def test_sequence_of(self):
+    def test_sequence_of_der(self):
         enc = asn1.Encoder()
         enc.start()
         enc.enter(asn1.Numbers.Sequence)
@@ -226,9 +236,77 @@ class TestEncoder(object):
         enc.write(2)
         enc.leave()
         res = enc.output()
+        assert res == b'\x30\x06\x02\x01\x01\x02\x01\x02'
+
+    def test_sequence_of_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(1)
+        enc.write(2)
+        enc.leave()
+        res = enc.output()
         assert res == b'\x30\x80\x02\x01\x01\x02\x01\x02\x00\x00'
 
-    def test_set(self):
+    def test_sequence_nested_der(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(1)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(b'foo')
+        enc.write(b'bar')
+        enc.leave()
+        enc.enter(asn1.Numbers.Sequence)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(b'boo')
+        enc.leave()
+        enc.leave()
+        enc.leave()
+        enc.leave()
+        enc.leave()
+        res = enc.output()
+        assert res == b'\x30\x1c\x02\x01\x01\x30\x0a\x04\x03foo\x04\x03bar\x30\x0b\x30\x09\x30\x07\x30\x05\x04\x03boo'
+
+    def test_sequence_nested_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(1)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(b'foo')
+        enc.write(b'bar')
+        enc.leave()
+        enc.enter(asn1.Numbers.Sequence)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.enter(asn1.Numbers.Sequence)
+        enc.write(b'boo')
+        enc.leave()
+        enc.leave()
+        enc.leave()
+        enc.leave()
+        enc.leave()
+        res = enc.output()
+        assert res == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
+    def test_list_der(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.write([1, [b'foo', b'bar'], [[[[b'boo']]]]])
+        res = enc.output()
+        assert res == b'\x30\x1c\x02\x01\x01\x30\x0a\x04\x03foo\x04\x03bar\x30\x0b\x30\x09\x30\x07\x30\x05\x04\x03boo'
+
+    def test_list_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
+        enc.write([1, [b'foo', b'bar'], [[[[b'boo']]]]])
+        res = enc.output()
+        assert res == b'\x30\x80\x02\x01\x01\x30\x80\x04\x03foo\x04\x03bar\x00\x00\x30\x80\x30\x80\x30\x80\x30\x80\x04\x03boo\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
+    def test_set_der(self):
         enc = asn1.Encoder()
         enc.start()
         enc.enter(asn1.Numbers.Set)
@@ -236,9 +314,19 @@ class TestEncoder(object):
         enc.write(b'foo')
         enc.leave()
         res = enc.output()
+        assert res == b'\x31\x08\x02\x01\x01\x04\x03foo'
+
+    def test_set_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
+        enc.enter(asn1.Numbers.Set)
+        enc.write(1)
+        enc.write(b'foo')
+        enc.leave()
+        res = enc.output()
         assert res == b'\x31\x80\x02\x01\x01\x04\x03foo\x00\x00'
 
-    def test_set_of(self):
+    def test_set_of_der(self):
         enc = asn1.Encoder()
         enc.start()
         enc.enter(asn1.Numbers.Set)
@@ -246,47 +334,104 @@ class TestEncoder(object):
         enc.write(2)
         enc.leave()
         res = enc.output()
+        assert res == b'\x31\x06\x02\x01\x01\x02\x01\x02'
+
+    def test_set_of_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
+        enc.enter(asn1.Numbers.Set)
+        enc.write(1)
+        enc.write(2)
+        enc.leave()
+        res = enc.output()
         assert res == b'\x31\x80\x02\x01\x01\x02\x01\x02\x00\x00'
 
-    def test_context(self):
+    def test_context_der(self):
         enc = asn1.Encoder()
         enc.start()
         enc.enter(1, asn1.Classes.Context)
         enc.write(1)
         enc.leave()
         res = enc.output()
+        assert res == b'\xa1\x03\x02\x01\x01'
+
+    def test_context_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
+        enc.enter(1, asn1.Classes.Context)
+        enc.write(1)
+        enc.leave()
+        res = enc.output()
         assert res == b'\xa1\x80\x02\x01\x01\x00\x00'
 
-    def test_application(self):
+    def test_application_der(self):
         enc = asn1.Encoder()
         enc.start()
         enc.enter(1, asn1.Classes.Application)
         enc.write(1)
         enc.leave()
         res = enc.output()
+        assert res == b'\x61\x03\x02\x01\x01'
+
+    def test_application_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
+        enc.enter(1, asn1.Classes.Application)
+        enc.write(1)
+        enc.leave()
+        res = enc.output()
         assert res == b'\x61\x80\x02\x01\x01\x00\x00'
 
-    def test_private(self):
+    def test_private_der(self):
         enc = asn1.Encoder()
         enc.start()
         enc.enter(1, asn1.Classes.Private)
         enc.write(1)
         enc.leave()
         res = enc.output()
+        assert res == b'\xe1\x03\x02\x01\x01'
+
+    def test_private_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
+        enc.enter(1, asn1.Classes.Private)
+        enc.write(1)
+        enc.leave()
+        res = enc.output()
         assert res == b'\xe1\x80\x02\x01\x01\x00\x00'
 
-    def test_long_tag_id(self):
+    def test_long_tag_id_der(self):
         enc = asn1.Encoder()
         enc.start()
         enc.enter(0xffff, asn1.Classes.Private)
         enc.write(1)
         enc.leave()
         res = enc.output()
+        assert res == b'\xff\x83\xff\x7f\x03\x02\x01\x01'
+
+    def test_long_tag_id_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
+        enc.enter(0xffff, asn1.Classes.Private)
+        enc.write(1)
+        enc.leave()
+        res = enc.output()
         assert res == b'\xff\x83\xff\x7f\x80\x02\x01\x01\x00\x00'
 
-    def test_contextmanager_construct(self):
+    def test_contextmanager_construct_der(self):
         enc = asn1.Encoder()
         enc.start()
+
+        with enc.construct(asn1.Numbers.Sequence):
+            enc.write(1)
+            enc.write(b'foo')
+
+        res = enc.output()
+        assert res == b'\x30\x08\x02\x01\x01\x04\x03foo'
+
+    def test_contextmanager_construct_cer(self):
+        enc = asn1.Encoder()
+        enc.start(None, asn1.Encoding.CER)
 
         with enc.construct(asn1.Numbers.Sequence):
             enc.write(1)
@@ -451,6 +596,16 @@ class TestEncoder(object):
         enc.write(1024.0)
         res = enc.output()
         assert res == b'\x09\x03\x80\x0A\x01'
+
+    def test_spnego(self):
+        encoder = asn1.Encoder()
+        encoder.start()
+        encoder.enter(0, asn1.Classes.Application)
+        encoder.write("1.3.6.1.5.5.2", asn1.Numbers.ObjectIdentifier)
+        encoder.leave()
+        out = encoder.output()
+        assert out == b'\x60\x08\x06\x06\x2b\x06\x01\x05\x05\x02'
+
 
 class TestDecoder(object):
     """Test suite for ASN1 Decoder."""

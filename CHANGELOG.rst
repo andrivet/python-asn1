@@ -1,6 +1,11 @@
 Changelog
 =========
 
+3.0.1 (2025-05-02)
+------------------
+
+* Fix #288 - Use DER encoding by default as in previous versions
+
 3.0.0 (2025-03-03)
 ------------------
 
