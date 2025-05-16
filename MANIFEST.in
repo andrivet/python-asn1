@@ -3,7 +3,6 @@ graft examples
 graft src
 graft ci
 graft tests
-graft stubs
 
 include .coveragerc
 include .cookiecutterrc
@@ -22,6 +21,9 @@ include *.cfg
 include *.ini
 include *.yml
 include *.yaml
+
+include src/asn1/core.pyi
+include src/asn1/py.typed
 
 global-exclude *.py[cod] __pycache__ *.so *.dylib .DS_Store .mypy_cache
 exclude .python-version

@@ -28,7 +28,7 @@ from contextlib import contextmanager
 from enum import IntEnum
 from functools import reduce
 
-__version__ = "3.0.1"
+__version__ = "3.1.0"
 
 from typing import Any  # noqa: F401
 from typing import Generator  # noqa: F401
@@ -103,6 +103,7 @@ class Classes(Asn1Enum):
 
 
 class Encoding(Asn1Enum):
+    """ASN.1 encoding types."""
     DER = 1  # Distinguished Encoding Rules
     CER = 2  # Canonical Encoding Rules
 
@@ -118,6 +119,12 @@ Tag = collections.namedtuple('Tag', 'nr typ cls')
 A named tuple to represent ASN.1 tags as returned by `Decoder.peek()` and
 `Decoder.read()`.
 """
+
+EncoderStream = Union[io.RawIOBase, io.BufferedWriter, None]
+"""A stream that can be used for output."""
+
+DecoderStream = Union[io.RawIOBase, io.BufferedIOBase, bytes]
+"""A stream that can be used for input."""
 
 
 def to_int_2c(values):  # type: (bytes) -> int
@@ -205,19 +212,19 @@ class Encoder(object):
 
     def __init__(self):  # type: () -> None
         """Constructor."""
-        self._stream = None     # type: Union[io.RawIOBase, io.BufferedWriter, None]  # Output stream
+        self._stream = None     # type: EncoderStream  # Output stream
         self._encoding = None   # type: Union[Encoding, None] # Encoding type (DER or CER)
         self._stack = None      # type: List[List[bytes]] | None  # Stack of encoded data
 
     def start(self, stream=None, encoding=None):
-        # type: (Union[io.RawIOBase, io.BufferedWriter, Encoding, None], Union[Encoding, None]) -> None
+        # type: (EncoderStream, Union[Encoding, None]) -> None
         """
         This method instructs the encoder to start encoding a new ASN.1
         output. This method may be called at any time to reset the encoder
         and reset the current output (if any).
 
         Args:
-            stream (io.RawIOBase or Encoding or None): The output stream or the encoding with no stream.
+            stream (EncoderStream): The output stream or the encoding with no stream.
             encoding (Encoding or None): The encoding (DER or CER) to use.
         """
         # stream is an Encoding, encoding is an Encoding: this not allowed
@@ -724,7 +731,7 @@ class Decoder(object):
         self._levels = 0        # type: int # Number of recursive calls
         self._ends = []         # type: List[int] # End of the current element (or INDEFINITE_FORM) for enter / leave
 
-    def start(self, stream):  # type: (Union[io.RawIOBase, io.BufferedIOBase, bytes]) -> None
+    def start(self, stream):  # type: (DecoderStream) -> None
         """
         This method instructs the decoder to start decoding an ASN.1 input.
         This method may be called at any time to start a new decoding job.
@@ -736,7 +743,7 @@ class Decoder(object):
             assumes the input is in BER or DER format.
 
         Args:
-            stream (bytes or io.RawIOBase): ASN.1 input, in BER or DER format, to be decoded.
+            stream (DecoderStream): ASN.1 input, in BER or DER format, to be decoded.
 
         Returns:
             None
@@ -745,7 +752,7 @@ class Decoder(object):
             `Error`
         """
         if not isinstance(stream, bytes) and not isinstance(stream, io.RawIOBase) and not isinstance(stream, io.BufferedIOBase):
-            raise Error('Expecting bytes or a subclass of io.RawIOBase. Get {} instead.'.format(type(stream)))
+            raise Error('Expecting bytes or a subclass of io.RawIOBase or BufferedIOBase. Get {} instead.'.format(type(stream)))
 
         self._stream = io.BytesIO(stream) if isinstance(stream, bytes) else stream  # type: ignore
         self._tag = None

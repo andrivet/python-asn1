@@ -1,6 +1,11 @@
 Changelog
 =========
 
+3.1.0 (2025-05-16)
+------------------
+
+* #291 - Add support for mypy. As a consequence, the previous module has been migrated to a package.
+
 3.0.1 (2025-05-02)
 ------------------
 

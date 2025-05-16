@@ -29,7 +29,7 @@ if version_info[0] < 3:
 
 setup(
     name='asn1',
-    version='3.0.1',
+    version='3.1.0',
     license='BSD',
     description='Python-ASN1 is a simple ASN.1 encoder and decoder for Python 2.7+ and 3.5+.',
     long_description='%s\n%s' % (
@@ -42,6 +42,7 @@ setup(
     url='https://github.com/andrivet/python-asn1',
     packages=find_packages('src'),
     package_dir={'': 'src'},
+    package_data={'asn1': ['py.typed', 'core.pyi']},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     include_package_data=True,
     zip_safe=False,
@@ -72,9 +73,5 @@ setup(
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
     install_requires=install_requires,
-    extras_require={
-        # eg:
-        #   'rst': ['docutils>=0.11'],
-        #   ':python_version=="2.6"': ['argparse'],
-    },
+    extras_require={},
 )

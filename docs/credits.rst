@@ -8,4 +8,4 @@ The following projects have provided inspiration for Python-ASN1:
   building constructed types.
 
 .. _pyasn1: https://pyasn1.sourceforge.net/
-.. _Samba: https://www.samba.org
+.. _Samba: https://github.com/samba-team/samba/tree/master/source3/libads
