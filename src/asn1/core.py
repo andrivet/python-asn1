@@ -24,7 +24,7 @@ from builtins import bytes
 from builtins import int
 from builtins import range
 from builtins import str
-from contextlib import contextmanager
+from contextlib import contextmanager, _GeneratorContextManager
 from enum import IntEnum
 from functools import reduce
 
@@ -210,10 +210,10 @@ class Error(Exception):
 class Encoder(object):
     """ASN.1 encoder. Uses DER encoding."""
 
-    def __init__(self):  # type: () -> None
+    def __init__(self, stream=None, encoding=None):  # type: (EncoderStream, Union[Encoding, None]) -> None
         """Constructor."""
-        self._stream = None     # type: EncoderStream  # Output stream
-        self._encoding = None   # type: Union[Encoding, None] # Encoding type (DER or CER)
+        self._stream = stream     # type: EncoderStream  # Output stream
+        self._encoding = encoding   # type: Union[Encoding, None] # Encoding type (DER or CER)
         self._stack = None      # type: List[List[bytes]] | None  # Stack of encoded data
 
     def start(self, stream=None, encoding=None):
@@ -717,6 +717,21 @@ class Encoder(object):
         for item in iter(value):
             self.write(item)
         self.leave()
+
+    def __enter__(self):
+        self.start(stream=self._stream, encoding=self._encoding)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if isinstance(self._stream, io.BytesIO):
+            self.output()
+        return False
+
+    def sequence(self, cls=None):  # type: (Union[int, None]) -> _GeneratorContextManager[None, None, None]
+        return self.construct(Numbers.Sequence, cls)
+
+    def set(self, cls=None):  # type: (Union[int, None]) -> _GeneratorContextManager[None, None, None]
+        return self.construct(Numbers.Set, cls)
 
 
 class Decoder(object):
