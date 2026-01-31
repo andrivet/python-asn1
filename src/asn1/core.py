@@ -743,9 +743,12 @@ class Encoder(object):
 class Decoder(object):
     """ASN.1 decoder. Understands BER (and DER which is a subset)."""
 
-    def __init__(self):  # type: () -> None
+    def __init__(self, stream=None):  # type: (Union[DecoderStream, None]) -> None
         """Constructor."""
         self._stream = None     # type: Union[io.RawIOBase, io.BufferedIOBase, None] # Input stream
+        if stream is not None:
+            self._stream = self._prepare_stream(stream)
+
         self._byte = bytes()    # type: bytes # Cached byte (to be able to implement eof)
         self._position = 0      # type: int # Due to caching, tell does not give the right position
         self._tag = None        # type: Union[Tag, None] # Cached Tag (to be able to implement peek)
@@ -772,10 +775,7 @@ class Decoder(object):
         Raises:
             `Error`
         """
-        if not isinstance(stream, bytes) and not isinstance(stream, io.RawIOBase) and not isinstance(stream, io.BufferedIOBase):
-            raise Error('Expecting bytes or a subclass of io.RawIOBase or BufferedIOBase. Get {} instead.'.format(type(stream)))
-
-        self._stream = io.BytesIO(stream) if isinstance(stream, bytes) else stream  # type: ignore
+        self._stream = self._prepare_stream(stream)
         self._tag = None
         self._byte = bytes()
         self._position = 0
@@ -913,6 +913,13 @@ class Decoder(object):
             raise Error('Call to leave() without a corresponding enter() call.')
         self._tag = None
         self._ends.pop()
+
+
+    def _prepare_stream(self, stream):  # type: (DecoderStream) -> Union[io.RawIOBase, io.BufferedIOBase]
+        if not isinstance(stream, bytes) and not isinstance(stream, io.RawIOBase) and not isinstance(stream, io.BufferedIOBase):
+            raise Error('Expecting bytes or a subclass of io.RawIOBase or BufferedIOBase. Get {} instead.'.format(type(stream)))
+        stream = io.BytesIO(stream) if isinstance(stream, bytes) else stream
+        return stream
 
     def _get_current_position(self):  # type: () -> int
         return 0 if self._stream is None else self._position
@@ -1348,3 +1355,13 @@ class Decoder(object):
             raise Error('ASN1 decoding error: invalid length ({})'.format(length))
         self._levels -= 1
         return value
+
+    def __enter__(self):
+        if self._stream is None:
+            raise Error('ASN1 decoding error: no stream to decode.')
+
+        self.start(stream=self._stream)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
