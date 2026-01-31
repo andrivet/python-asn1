@@ -25,6 +25,13 @@ def test_example1():
     assert encoder.output() == b'\x06\x02\x2a\x03'
 
 
+def test_example1_cm():
+    """Encoding an object identifier."""
+    with asn1.Encoder() as encoder:
+        encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
+        assert encoder.output() == b'\x06\x02\x2a\x03'
+
+
 def test_example2(tmp_path):
     """Encoding an object identifier directly to a file."""
     with open(str(tmp_path / 'example2.der'), 'wb') as f:
@@ -32,6 +39,17 @@ def test_example2(tmp_path):
         encoder.start(f, asn1.Encoding.DER)  # CER is the default when using a stream
         encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
         encoder.output()  # Do nt forget to call output() to flush the buffer
+
+    with open(str(tmp_path / 'example2.der'), 'rb') as f:
+        data = f.read()
+        assert data == b'\x06\x02\x2a\x03'
+
+
+def test_example2_cm(tmp_path):
+    """Encoding an object identifier directly to a file."""
+    with open(str(tmp_path / 'example2.der'), 'wb') as f:
+        with asn1.Encoder(stream=f, encoding=asn1.Encoding.DER) as encoder:
+            encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
 
     with open(str(tmp_path / 'example2.der'), 'rb') as f:
         data = f.read()
@@ -55,6 +73,21 @@ def test_example3(tmp_path):
         assert data == b'\x30\x1d\x13\x05test1\x13\x05test20\x0D\x02\x01\x01\t\x03\x80\xfd\x01\x04\x03\x01\x02\x03'
 
 
+def test_example3_cm(tmp_path):
+    """Encoding of complex data."""
+    with open(str(tmp_path / 'example3.der'), 'wb') as f:
+        with asn1.Encoder(stream=f, encoding=asn1.Encoding.DER) as encoder:
+            encoder.write(['test1', 'test2', [
+                1,
+                0.125,
+                b'\x01\x02\x03'
+            ]])
+
+    with open(str(tmp_path / 'example3.der'), 'rb') as f:
+        data = f.read()
+        assert data == b'\x30\x1d\x13\x05test1\x13\x05test20\x0D\x02\x01\x01\t\x03\x80\xfd\x01\x04\x03\x01\x02\x03'
+
+
 def test_example4(tmp_path):
     """Decoding from a file."""
     with open(str(tmp_path / 'example4.der'), 'wb') as f:
@@ -66,6 +99,24 @@ def test_example4(tmp_path):
             b'\x01\x02\x03'
         ]])
         encoder.output()
+
+    with open(str(tmp_path / 'example4.der'), 'rb') as f:
+        decoder = asn1.Decoder()
+        decoder.start(f)
+        tag, value = decoder.read()
+        assert tag == (asn1.Numbers.Sequence, asn1.Types.Constructed, asn1.Classes.Universal)
+        assert value == ['test1', 'test2', [1, 0.125, b'\x01\x02\x03']]
+
+
+def test_example4_cm(tmp_path):
+    """Decoding from a file."""
+    with open(str(tmp_path / 'example4.der'), 'wb') as f:
+        with asn1.Encoder(f, asn1.Encoding.DER) as encoder:
+            encoder.write(['test1', 'test2', [
+                1,
+                0.125,
+                b'\x01\x02\x03'
+            ]])
 
     with open(str(tmp_path / 'example4.der'), 'rb') as f:
         decoder = asn1.Decoder()
@@ -100,6 +151,19 @@ def test_example6():
     encoder.leave()
     encoder.leave()
     assert encoder.output() == b'\x30\x1d\x13\x05test1\x13\x05test20\r\x02\x01\x01\t\x03\x80\xfd\x01\x04\x03\x01\x02\x03'
+
+
+def test_example6_cm():
+    """Encoding of sequences."""
+    with asn1.Encoder() as encoder:
+        with encoder.sequence():
+            encoder.write('test1', asn1.Numbers.PrintableString)
+            encoder.write('test2', asn1.Numbers.PrintableString)
+            with encoder.sequence():
+                encoder.write(1, asn1.Numbers.Integer)
+                encoder.write(0.125, asn1.Numbers.Real)
+                encoder.write(b'\x01\x02\x03', asn1.Numbers.OctetString)
+        assert encoder.output() == b'\x30\x1d\x13\x05test1\x13\x05test20\r\x02\x01\x01\t\x03\x80\xfd\x01\x04\x03\x01\x02\x03'
 
 
 def test_example7():
@@ -228,6 +292,11 @@ def test_example9(tmp_path):
         encoder = asn1.Encoder()
         encoder.start(f)
 
+def test_example9_cm(tmp_path):
+    """Using CER encoding with a stream (file)."""
+    with open(str(tmp_path / 'exmple9.cer'), 'wb') as f:
+        with asn1.Encoder(stream=f) as _:
+            pass
 
 def test_example10(tmp_path):
     """Using DER encoding with a stream (file)."""
@@ -235,3 +304,9 @@ def test_example10(tmp_path):
         encoder = asn1.Encoder()
         encoder.start(f, asn1.Encoding.DER)
         encoder.output()
+
+def test_example10_cm(tmp_path):
+    """Using DER encoding with a stream (file)."""
+    with open(str(tmp_path / 'exmple10.der'), 'wb') as f:
+        with asn1.Encoder(stream=f, encoding=asn1.Encoding.DER) as _:
+            pass
