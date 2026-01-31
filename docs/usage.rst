@@ -93,6 +93,16 @@ If you want to encode data and retrieve its DER-encoded representation, use code
   encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
   encoded_bytes = encoder.output()
 
+or using the new context manager api:
+
+.. code-block:: python
+
+  import asn1
+
+  with asn1.Encoder() as encoder:
+      encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
+      encoded_bytes = encoder.output()
+
 It is also possible to encode data directly to a file or any stream:
 
 .. code-block:: python
@@ -103,6 +113,16 @@ It is also possible to encode data directly to a file or any stream:
     encoder = asn1.Encoder()
     encoder.start(f)
     encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
+
+or using the new context manager api:
+
+.. code-block:: python
+
+  import asn1
+
+  with open('output.der', 'wb') as f:
+    with asn1.Encoder(stream=f) as encoder:
+        encoder.write('1.2.3', asn1.Numbers.ObjectIdentifier)
 
 You can encode complex data structures such as sequences and sets:
 
@@ -138,6 +158,22 @@ If you want to precisely specify the ASN.1 type, you have to use the `Encoder.en
         encoder.write(b'\x01\x02\x03', asn1.Numbers.OctetString)
         encoder.leave()
         encoder.leave()
+
+or using the new context manager api:
+
+.. code-block:: python
+
+  import asn1
+
+  with open('output.der', 'wb') as f:
+        with asn1.Encoder(stream=f) as encoder:
+            with encoder.sequence():
+                encoder.write('test1', asn1.Numbers.PrintableString)
+                encoder.write('test2', asn1.Numbers.PrintableString)
+                with encoder.sequence():
+                    encoder.write(1, asn1.Numbers.Integer)
+                    encoder.write(0.125, asn1.Numbers.Real)
+                    encoder.write(b'\x01\x02\x03', asn1.Numbers.OctetString)
 
 This also allows to encode data progressively, without having to keep everything in memory.
 
@@ -195,6 +231,15 @@ If you want to decode ASN.1 from BER (DER, CER, ...) encoded bytes, use code suc
   decoder = asn1.Decoder()
   decoder.start(encoded_bytes)
   tag, value = decoder.read()
+
+or using the new context manager api:
+
+.. code-block:: python
+
+  import asn1
+
+  with asn1.Decoder(stream=encoded_bytes) as decoder:
+      tag, value = decoder.read()
 
 It is also possible to decode data directly from a file or any stream:
 
