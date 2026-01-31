@@ -723,7 +723,13 @@ class Encoder(object):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if isinstance(self._stream, io.BytesIO):
+
+        # When using CER encoding, you do not need to call it at all. With CER, this method can only
+        # be called when using a BytesIO stream or no stream.
+        if self._encoding == Encoding.CER:
+            if isinstance(self._stream, io.BytesIO) or self._stream is None:
+                self.output()
+        else:
             self.output()
         return False
 
