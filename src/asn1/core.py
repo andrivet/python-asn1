@@ -24,7 +24,8 @@ from builtins import bytes
 from builtins import int
 from builtins import range
 from builtins import str
-from contextlib import contextmanager, _GeneratorContextManager
+from contextlib import _GeneratorContextManager  # noqa F401
+from contextlib import contextmanager
 from enum import IntEnum
 from functools import reduce
 
@@ -303,39 +304,41 @@ class Encoder(object):
     @contextmanager
     def construct(self, nr, cls=None):  # type: (int, Union[int, None]) -> Generator[None, Any, None]
         """
-        This method - context manager calls enter and leave methods,
+        This method is a context manager that calls the enter and leave methods
         for better code mapping.
 
-        Usage:
-        ```
-        with encoder.construct(asn1.Numbers.Sequence):
-            encoder.write(1)
+        Usage::
+
             with encoder.construct(asn1.Numbers.Sequence):
-                encoder.write('foo')
-                encoder.write('bar')
-            encoder.write(2)
-        ```
-        encoder.output() will result following structure:
-        SEQUENCE:
-            INTEGER: 1
+                encoder.write(1)
+                with encoder.construct(asn1.Numbers.Sequence):
+                    encoder.write('foo')
+                    encoder.write('bar')
+                encoder.write(2)
+
+        ``encoder.output()`` will result in the following structure::
+
             SEQUENCE:
-                STRING: foo
-                STRING: bar
-            INTEGER: 2
+                INTEGER: 1
+                SEQUENCE:
+                    STRING: foo
+                    STRING: bar
+                INTEGER: 2
 
         Args:
-            nr (int): The desired ASN.1 type. Use ``Numbers`` enumeration.
+            nr (int):
+                The desired ASN.1 type. Use ``Numbers`` enumeration.
 
-            cls (int): This optional parameter specifies the class
-                of the constructed type. The default class to use is the
-                universal class. Use ``Classes`` enumeration.
+            cls (int, optional):
+                Specifies the class of the constructed type.
+                The default class is the universal class.
+                Use ``Classes`` enumeration.
 
         Returns:
             None
 
         Raises:
-            `Error`
-
+            Error
         """
         self.enter(nr, cls)
         yield
@@ -913,7 +916,6 @@ class Decoder(object):
             raise Error('Call to leave() without a corresponding enter() call.')
         self._tag = None
         self._ends.pop()
-
 
     def _prepare_stream(self, stream):  # type: (DecoderStream) -> Union[io.RawIOBase, io.BufferedIOBase]
         if not isinstance(stream, bytes) and not isinstance(stream, io.RawIOBase) and not isinstance(stream, io.BufferedIOBase):
