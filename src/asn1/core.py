@@ -29,7 +29,7 @@ from contextlib import contextmanager
 from enum import IntEnum
 from functools import reduce
 
-__version__ = "3.1.0"
+__version__ = "3.1.1"
 
 from typing import Any  # noqa: F401
 from typing import Generator  # noqa: F401
