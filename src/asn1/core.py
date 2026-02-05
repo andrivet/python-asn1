@@ -24,7 +24,11 @@ from builtins import bytes
 from builtins import int
 from builtins import range
 from builtins import str
-from contextlib import _GeneratorContextManager  # noqa F401
+
+try:
+    from contextlib import _GeneratorContextManager  # noqa F401
+except ImportError:
+    _GeneratorContextManager = None
 from contextlib import contextmanager
 from enum import IntEnum
 from functools import reduce
