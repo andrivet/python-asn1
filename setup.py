@@ -30,7 +30,6 @@ if version_info[0] < 3:
 setup(
     name='asn1',
     version='3.1.1',
-    license='BSD',
     description='Python-ASN1 is a simple ASN.1 encoder and decoder for Python 2.7+ and 3.5+.',
     long_description='%s\n%s' % (
         re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.rst')),
@@ -46,10 +45,10 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     include_package_data=True,
     zip_safe=False,
+    license="MIT",
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
         'Operating System :: Unix',
         'Operating System :: POSIX',
         'Operating System :: Microsoft :: Windows',
