@@ -1,6 +1,14 @@
 Changelog
 =========
 
+3.1.1 (2026-31-01)
+------------------
+
+* Support for using Encoder via context manager
+* Support for encoding sequences via context manager
+* Support for encoding sets via context manager
+* Support for using Decoder via context manager
+
 3.1.0 (2025-05-16)
 ------------------
 

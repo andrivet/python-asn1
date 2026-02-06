@@ -24,11 +24,16 @@ from builtins import bytes
 from builtins import int
 from builtins import range
 from builtins import str
+
+try:
+    from contextlib import _GeneratorContextManager  # noqa F401
+except ImportError:
+    _GeneratorContextManager = None
 from contextlib import contextmanager
 from enum import IntEnum
 from functools import reduce
 
-__version__ = "3.1.0"
+__version__ = "3.1.1"
 
 from typing import Any  # noqa: F401
 from typing import Generator  # noqa: F401
@@ -210,10 +215,10 @@ class Error(Exception):
 class Encoder(object):
     """ASN.1 encoder. Uses DER encoding."""
 
-    def __init__(self):  # type: () -> None
+    def __init__(self, stream=None, encoding=None):  # type: (EncoderStream, Union[Encoding, None]) -> None
         """Constructor."""
-        self._stream = None     # type: EncoderStream  # Output stream
-        self._encoding = None   # type: Union[Encoding, None] # Encoding type (DER or CER)
+        self._stream = stream     # type: EncoderStream  # Output stream
+        self._encoding = encoding   # type: Union[Encoding, None] # Encoding type (DER or CER)
         self._stack = None      # type: List[List[bytes]] | None  # Stack of encoded data
 
     def start(self, stream=None, encoding=None):
@@ -303,39 +308,41 @@ class Encoder(object):
     @contextmanager
     def construct(self, nr, cls=None):  # type: (int, Union[int, None]) -> Generator[None, Any, None]
         """
-        This method - context manager calls enter and leave methods,
+        This method is a context manager that calls the enter and leave methods
         for better code mapping.
 
-        Usage:
-        ```
-        with encoder.construct(asn1.Numbers.Sequence):
-            encoder.write(1)
+        Usage::
+
             with encoder.construct(asn1.Numbers.Sequence):
-                encoder.write('foo')
-                encoder.write('bar')
-            encoder.write(2)
-        ```
-        encoder.output() will result following structure:
-        SEQUENCE:
-            INTEGER: 1
+                encoder.write(1)
+                with encoder.construct(asn1.Numbers.Sequence):
+                    encoder.write('foo')
+                    encoder.write('bar')
+                encoder.write(2)
+
+        ``encoder.output()`` will result in the following structure::
+
             SEQUENCE:
-                STRING: foo
-                STRING: bar
-            INTEGER: 2
+                INTEGER: 1
+                SEQUENCE:
+                    STRING: foo
+                    STRING: bar
+                INTEGER: 2
 
         Args:
-            nr (int): The desired ASN.1 type. Use ``Numbers`` enumeration.
+            nr (int):
+                The desired ASN.1 type. Use ``Numbers`` enumeration.
 
-            cls (int): This optional parameter specifies the class
-                of the constructed type. The default class to use is the
-                universal class. Use ``Classes`` enumeration.
+            cls (int, optional):
+                Specifies the class of the constructed type.
+                The default class is the universal class.
+                Use ``Classes`` enumeration.
 
         Returns:
             None
 
         Raises:
-            `Error`
-
+            Error
         """
         self.enter(nr, cls)
         yield
@@ -718,13 +725,37 @@ class Encoder(object):
             self.write(item)
         self.leave()
 
+    def __enter__(self):
+        self.start(stream=self._stream, encoding=self._encoding)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+
+        # When using CER encoding, you do not need to call it at all. With CER, this method can only
+        # be called when using a BytesIO stream or no stream.
+        if self._encoding == Encoding.CER:
+            if isinstance(self._stream, io.BytesIO) or self._stream is None:
+                self.output()
+        else:
+            self.output()
+        return False
+
+    def sequence(self, cls=None):  # type: (Union[int, None]) -> _GeneratorContextManager[None, None, None]
+        return self.construct(Numbers.Sequence, cls)
+
+    def set(self, cls=None):  # type: (Union[int, None]) -> _GeneratorContextManager[None, None, None]
+        return self.construct(Numbers.Set, cls)
+
 
 class Decoder(object):
     """ASN.1 decoder. Understands BER (and DER which is a subset)."""
 
-    def __init__(self):  # type: () -> None
+    def __init__(self, stream=None):  # type: (Union[DecoderStream, None]) -> None
         """Constructor."""
         self._stream = None     # type: Union[io.RawIOBase, io.BufferedIOBase, None] # Input stream
+        if stream is not None:
+            self._stream = self._prepare_stream(stream)
+
         self._byte = bytes()    # type: bytes # Cached byte (to be able to implement eof)
         self._position = 0      # type: int # Due to caching, tell does not give the right position
         self._tag = None        # type: Union[Tag, None] # Cached Tag (to be able to implement peek)
@@ -751,10 +782,7 @@ class Decoder(object):
         Raises:
             `Error`
         """
-        if not isinstance(stream, bytes) and not isinstance(stream, io.RawIOBase) and not isinstance(stream, io.BufferedIOBase):
-            raise Error('Expecting bytes or a subclass of io.RawIOBase or BufferedIOBase. Get {} instead.'.format(type(stream)))
-
-        self._stream = io.BytesIO(stream) if isinstance(stream, bytes) else stream  # type: ignore
+        self._stream = self._prepare_stream(stream)
         self._tag = None
         self._byte = bytes()
         self._position = 0
@@ -892,6 +920,12 @@ class Decoder(object):
             raise Error('Call to leave() without a corresponding enter() call.')
         self._tag = None
         self._ends.pop()
+
+    def _prepare_stream(self, stream):  # type: (DecoderStream) -> Union[io.RawIOBase, io.BufferedIOBase]
+        if not isinstance(stream, bytes) and not isinstance(stream, io.RawIOBase) and not isinstance(stream, io.BufferedIOBase):
+            raise Error('Expecting bytes or a subclass of io.RawIOBase or BufferedIOBase. Get {} instead.'.format(type(stream)))
+        stream = io.BytesIO(stream) if isinstance(stream, bytes) else stream
+        return stream
 
     def _get_current_position(self):  # type: () -> int
         return 0 if self._stream is None else self._position
@@ -1327,3 +1361,13 @@ class Decoder(object):
             raise Error('ASN1 decoding error: invalid length ({})'.format(length))
         self._levels -= 1
         return value
+
+    def __enter__(self):
+        if self._stream is None:
+            raise Error('ASN1 decoding error: no stream to decode.')
+
+        self.start(stream=self._stream)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
