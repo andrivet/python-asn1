@@ -4,7 +4,7 @@
 # made available under the MIT license. Consult the file "LICENSE" that
 # is distributed together with this file for the exact licensing terms.
 #
-# Python-ASN1 is copyright (c) 2007-2025 by the Python-ASN1 authors. See the
+# Python-ASN1 is copyright (c) 2007-2026 by the Python-ASN1 authors. See the
 # file "AUTHORS" for a complete overview.
 
 # Based on Free ASN.1:2008 compliance suite

@@ -4,7 +4,7 @@
 # made available under the MIT license. Consult the file "LICENSE" that is
 # distributed together with this file for the exact licensing terms.
 #
-# Python-ASN1 is copyright (c) 2007-2025 by the Python-ASN1 authors. See the
+# Python-ASN1 is copyright (c) 2007-2026 by the Python-ASN1 authors. See the
 # file "AUTHORS" for a complete overview.
 
 """
@@ -33,7 +33,7 @@ from contextlib import contextmanager
 from enum import IntEnum
 from functools import reduce
 
-__version__ = "3.1.1"
+__version__ = "3.2.0"
 
 from typing import Any  # noqa: F401
 from typing import Generator  # noqa: F401

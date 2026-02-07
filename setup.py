@@ -29,7 +29,7 @@ if version_info[0] < 3:
 
 setup(
     name='asn1',
-    version='3.1.1',
+    version='3.2.0',
     description='Python-ASN1 is a simple ASN.1 encoder and decoder for Python 2.7+ and 3.5+.',
     long_description='%s\n%s' % (
         re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.rst')),
