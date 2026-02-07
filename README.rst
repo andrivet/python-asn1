@@ -121,6 +121,13 @@ The complete documentation is available on Read The Docs:
 
 `python-asn1.readthedocs.io <https://python-asn1.readthedocs.io/en/latest/>`_
 
+Contributing
+============
+
+Contributions to Python-ASN1 are welcome. If you want to contribute, please fork the repository on GitHub, make your changes and submit a pull request (PR).
+Please make sure that your code is properly tested and that all tests pass.
+In particular, tests should pass for old versions of Python (2.7 and from 3.5 to 3.14).
+You can use the provided Docker file to test your code on all those versions of Python.
 
 License
 =======
@@ -136,3 +143,4 @@ The following people have contributed to Python-ASN1. Collectively they own the 
 
 * Geert Jansen (geert@boskant.nl): `original implementation <https://github.com/geertj/python-asn1>`_.
 * Sebastien Andrivet (sebastien@andrivet.com)
+* Filippo Santovito (filippo.santovito@gmail.com)
