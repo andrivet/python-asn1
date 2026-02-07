@@ -1,10 +1,15 @@
 .tox/
 .coverage_data/
 .python-version
-__pycache__/
-*.pyc
+**/__pycache__/
+**/*.pyc
 build/
 dist/
 htmlcov/
 *.egg-info/
 *.egg
+.git
+.idea
+.mypy_cache/
+.pytest_cache/
+.DS_Store
