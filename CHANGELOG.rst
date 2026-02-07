@@ -1,13 +1,19 @@
 Changelog
 =========
 
-3.1.1 (2026-31-01)
+3.2.0 (2026-02-06)
 ------------------
 
-* Support for using Encoder via context manager
-* Support for encoding sequences via context manager
-* Support for encoding sets via context manager
-* Support for using Decoder via context manager
+* New API using a context manager
+    * Support for using Encoder via context manager
+    * Support for encoding sequences via context manager
+    * Support for encoding sets via context manager
+    * Support for using Decoder via context manager
+
+* Add support of Python 3.14
+
+* New way of installing old versions of Python in the Docker file.
+  As a consequence, all versions of Python including 2.7 and from 3.5 to 3.14 are now properly tested.
 
 3.1.0 (2025-05-16)
 ------------------
