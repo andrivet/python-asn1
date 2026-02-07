@@ -32,6 +32,7 @@ jobs:
       - name: Run tox in container
         run: |
           docker run --rm \
+            --user "$(id -u):$(id -g)" \
             -v "${{ github.workspace }}:/home/user/project" \
             -w /home/user/project \
             python-asn1:ci
