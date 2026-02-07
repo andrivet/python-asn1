@@ -1,0 +1,37 @@
+name: Tox (Docker)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tox:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Enables layer caching with BuildKit/buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build the image from your Dockerfile and cache layers in GitHub Actions cache storage
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: python-asn1:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Run tox inside the built container
+      - name: Run tox in container
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/home/user/project" \
+            -w /home/user/project \
+            python-asn1:ci
