@@ -823,6 +823,7 @@ class Decoder(object):
             return None
         self._tag = self._decode_tag()
         if end == INDEFINITE_FORM and self._tag == (0, 0, 0):
+            self._decode_length(self._tag.typ)
             return None
         return self._tag
 
@@ -896,9 +897,9 @@ class Decoder(object):
             return
         if tag.typ != Types.Constructed:
             raise Error('Cannot enter a primitive tag.')
-        length = self._decode_length(tag.typ)
+        length = self._decode_length(tag.typ)  # Can be INDEFINITE (-1)
         self._tag = None
-        self._ends.append(self._get_current_position() + length)
+        self._ends.append(INDEFINITE_FORM if length == length else self._get_current_position() + length)
 
     def leave(self):  # type: () -> None
         """
