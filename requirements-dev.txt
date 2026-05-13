@@ -1,15 +1,15 @@
 -r requirements.txt
-pytest~=8.3.5
-tox~=4.24.1
-flake8~=7.1.2
-isort~=6.0.1
-docutils~=0.21.2
-check-manifest~=0.50
+pytest~=9.0.3
+tox~=4.54.0
+flake8~=7.3.0
+isort~=8.0.1
+docutils~=0.22.4
+check-manifest~=0.51
 readme-renderer~=44.0
-pygments~=2.19.1
-sphinx~=8.2.1
-sphinx_rtd_theme~=3.0.2
-coverage~=7.6.12
-twine~=6.1.0
-wheel~=0.45.1
+pygments~=2.20.0
+sphinx~=9.1.0
+sphinx_rtd_theme~=3.1.0
+coverage~=7.14.0
+twine~=6.2.0
+wheel~=0.47.0
 advbumpversion~=1.2.0
