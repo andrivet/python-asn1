@@ -2,7 +2,7 @@
 
 |build| |version| |wheel| |supported-versions| |supported-implementations|
 
-.. |build| image:: https://github.com/andrivet/python-asn1/actions/workflows/tests.yml/badge.svg
+.. |build| image:: https://github.com/andrivet/python-asn1/actions/workflows/tox-docker.yml/badge.svg
     :target: https://github.com/andrivet/python-asn1
     :alt: GitHub Actions
 
