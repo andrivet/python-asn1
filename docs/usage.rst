@@ -177,6 +177,18 @@ or using the new context manager api:
 
 This also allows to encode data progressively, without having to keep everything in memory.
 
+A value can be encoded with an explicit Number, Type or Class:
+
+.. code-block:: python
+
+  import asn1
+
+  encoder = asn1.Encoder()
+  encoder.start()
+  enc.write(55, nr=asn1.Numbers.Integer, typ=asn1.Types.Primitive, cls=asn1.Classes.Application)
+  encoded_bytes = encoder.output()
+
+
 DER and CER
 -----------
 

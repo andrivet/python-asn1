@@ -59,6 +59,13 @@ class TestEncoder(object):
         res = enc.output()
         assert res == b'\x02\x0f\xfe\xfd\xfc\xfb\xfa\xf9\xf8\xf7\xf6\xf5\xf4\xf3\xf2\xf1\xf1'
 
+    def test_application_integer(self):
+        enc = asn1.Encoder()
+        enc.start()
+        enc.write(55, nr=asn1.Numbers.Integer, typ=asn1.Types.Primitive, cls=asn1.Classes.Application)
+        res = enc.output()
+        assert res == b'\x42\x01\x37'
+
     def test_twos_complement_boundaries(self):
         enc = asn1.Encoder()
         enc.start()

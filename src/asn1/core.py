@@ -561,7 +561,7 @@ class Encoder(object):
 
     def _encode_value(self, cls, nr, value):  # type: (int, int, Any) -> bytes
         """Encode a value."""
-        if cls != Classes.Universal:
+        if isinstance(value, bytes) and nr != Numbers.BitString:  # Assume it is already encoded (raw value)
             return value
 
         if nr in (Numbers.Integer, Numbers.Enumerated):
