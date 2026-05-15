@@ -1,6 +1,12 @@
 Changelog
 =========
 
+3.3.0 (2026-05-15)
+------------------
+
+* Fix #298 - Incorrect handling of indefinite form length when using ENTER/LEAVE
+* Fix #296 - Support for writing IMPLICIT values
+
 3.2.0 (2026-02-06)
 ------------------
 
