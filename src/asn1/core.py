@@ -1212,6 +1212,10 @@ class Decoder(object):
                 sub_identifiers.append(value)
                 value = 0
 
+        # 8.19.2: the last byte of each sub-identifier has bit 8 set to zero
+        if content[-1] & 0x80:
+            raise Error('ASN1 decoding error: the last sub-identifier of an OID value is truncated.')
+
         if len(sub_identifiers) == 0:
             raise Error('ASN1 decoding error: no sub-identifiers found.')
 

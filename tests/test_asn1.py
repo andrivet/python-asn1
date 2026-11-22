@@ -1098,6 +1098,12 @@ class TestDecoder(object):
         dec.start(buf)
         pytest.raises(asn1.Error, dec.read)
 
+    def test_error_truncated_object_identifier(self):
+        for buf in (b'\x06\x02\x2a\x86', b'\x06\x05\x2a\x86\x48\x86\xf7', b'\x06\x01\x81'):
+            dec = asn1.Decoder()
+            dec.start(buf)
+            pytest.raises(asn1.Error, dec.read)
+
     def test_error_bitstring_with_too_many_unused_bits(self):
         buf = b'\x03\x04\x08\x12\x34\x50'
         dec = asn1.Decoder()

@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+* Reject an OID value whose last sub-identifier is truncated (last byte has bit 8 set)
+  instead of silently dropping it
+
 3.3.0 (2026-05-15)
 ------------------
 
